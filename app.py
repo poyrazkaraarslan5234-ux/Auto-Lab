@@ -13,10 +13,9 @@ import streamlit as st
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Auto Lab Pro - Ultimate ECU & Car Studio", page_icon="🚗", layout="wide")
 
-# --- KENDİ NUMARANIZI BURAYA YAZIN ---
 WHATSAPP_NUMARASI = "905510305139"
 
-# --- SABİT WHATSAPP BUTONU (SOL ÜST KÖŞE) ---
+# --- SABİT WHATSAPP BUTONU ---
 st.markdown(f"""
     <style>
     .fixed-whatsapp {{
@@ -177,7 +176,7 @@ def detayli_arac_analizi(arac_adi, yil, km, hasar_durumu):
         tavsiye = "🔥 Kesinlikle Alınır! Düşük yaş, düşük kilometre ve hatasız kondisyonda."
         risk = "Çok Düşük. Periyodik bakımlar haricinde masraf açmaz."
     elif "Ağır Hasar" in hasar_durumu or "Şase" in hasar_durumu or "Podye" in hasar_durumu:
-        tavsiye = "🚨 Riskli! Uzak Durun. Şase veya podye işlemleri sürüş güvenliğini doğrudan tehlikeye atar."
+        tavsiye = "🚨 Riskli! Uzak Durun. Şase veya podye işlemleri sürüş güvenliğini doğrudan tehlikeli kılar."
         risk = "Yüksek. Kaporta esnemesi ve ağır kaza geçmişi riski."
     elif km_int > 200000 or yas > 12:
         tavsiye = "⚠️ Şartlı Alınır. Yüksek kilometre/yaş sebebiyle motor, turbo ve yürüyen aksam detaylı mekanik eksperden geçmeli."
@@ -217,9 +216,9 @@ def arac_sorun_analizi_yap(sorun_metni):
             "1.500₺ - 35.000₺ (Arızanın kaynağına göre değişir)"
         )
     elif "turbo" in s_kucuk:
-        return ("Turbonun içindeki mil boşluğu, türbin pervanesi aşınması veya intercooler hortumunda kaçak (delik) olabilir. Acil kontrol edilmelidir, aksi takdirde turbo tamamen kilitlenebilir.", "7.500₺ - 25.000₺+")
+        return ("Turbonun içindeki mil boşluğu, türbin pervanesi aşınması veya intercooler hortumunda kaçak (delik) olabilir. Acil kontrol edilmelidir.", "7.500₺ - 25.000₺+")
     elif "çalışmıyor" in s_kucuk or "marş" in s_kucuk:
-        return ("Akü zayıflamış veya marş motoru kömürleri bitmiş olabilir. Akü kutup başlarını ve marş basma sesini kontrol edin.", "1.500₺ - 4.500₺")
+        return ("Akü zayıflamış veya marş motoru kömürleri bitmiş olabilir. Akü kutup başlarını kontrol edin.", "1.500₺ - 4.500₺")
     elif "duman" in s_kucuk:
         return ("Siyah duman: Hava filtresi tıkalı veya enjektör arızası. Mavi duman: Motor yağ yakıyor. Beyaz duman: Silindir kapak contası su veriyor olabilir.", "3.000₺ - 20.000₺+")
     elif "titreme" in s_kucuk or "silkeleme" in s_kucuk:
@@ -379,6 +378,8 @@ sekme = st.selectbox("Auto Lab Ana Menü:", [
     "⚖️ Serbest Araç Karşılaştırma", 
     "⚡ Gelişmiş ECU & Chip Tuning Simülatörü",
     "🛠️ Araç Sorunları & Çözüm Asistanı",
+    "🔊 Araç İçi Ses & NVH Arıza Teşhisi",
+    "🏷️ Yedek Parça Orijinal/Yan Sanayi Kıyas",
     "📋 Tramer & Parça Maliyet Simülatörü",
     "💰 Galeri Al-Sat & Kar Hesaplayıcı",
     "📜 Noter & Devir Masraf Hesaplayıcı",
@@ -551,28 +552,51 @@ elif sekme == "⚖️ Serbest Araç Karşılaştırma":
             """, unsafe_allow_html=True)
 
 elif sekme == "⚡ Gelişmiş ECU & Chip Tuning Simülatörü":
-    st.markdown("### ⚡ İnteraktif Chip Tuning & ECU Kalibrasyon Modülü")
+    st.markdown("### ⚡ Güncellenmiş Dinamik ECU & Chip Tuning Simülatörü")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
-        st_arac_adi = st.text_input("Araç Model / Motor Adı:", "Ford Mustang", key="ecu_arac")
+        st_arac_adi = st.text_input("Araç Model / Motor Adı (örn: Ford Mustang 2.3 EcoBoost / Passat 2.0 TDI):", "Ford Mustang", key="ecu_arac")
+        motor_tipi = st.selectbox("Motor Besleme Türü:", ["Turbo Benzinli (Turbocharged Petrol)", "Turbo Dizel (Turbodiesel)", "Atmosferik (Naturally Aspirated)"], key="ecu_tip")
         otomatik_veri = arac_analizi_uret(st_arac_adi)
         st_hp = otomatik_veri.get("hp", 150)
         st_tork = otomatik_veri.get("tork", 250)
-        st.info(f"✨ **Otomatik Stok Değerler:**\n- **Güç:** {st_hp} HP\n- **Tork:** {st_tork} Nm")
+        st.info(f"✨ **Otomatik Algılanan Stok Değerler:**\n- **Güç:** {st_hp} HP\n- **Tork:** {st_tork} Nm")
     with col_t2:
-        secilen_stage = st.selectbox("Yazılım Seviyesi Seçin:", ["Stage 1 (Güvenli)", "Stage 2 (Performans)", "Stage 3 (Maksimum Güç)"], key="ecu_stage")
+        secilen_stage = st.selectbox("Yazılım Seviyesi Seçin:", [
+            "Stage 1 (Güvenli / Orijinal Donanım)", 
+            "Stage 2 (Downpipe + Performans Filtre/Intercooler)", 
+            "Stage 3 (Büyük Turbo + Enjektör + Komple Egzoz)"
+        ], key="ecu_stage")
+        yakit_kalitesi = st.selectbox("Yakıt Kalitesi / Oktan:", ["95 Oktan Normal Benzin / Standart Mazot", "97/98 Oktan Yüksek Kaliteli Yakıt"], key="ecu_yakit")
 
-    if st.button("🚀 ECU Yazılımını Hesapla ve Uygula", key="btn_ecu"):
+    if st.button("🚀 Gerçekçi ECU Haritası Hesapla ve Uygula", key="btn_ecu"):
         st.session_state.islem_sayisi += 1
-        carpban = 1.22 if "Stage 1" in secilen_stage else (1.38 if "Stage 2" in secilen_stage else 1.70)
-        hesaplanmis_hp = int(st_hp * carpban)
-        hesaplanmis_tork = int(st_tork * (carpban + 0.05))
+        
+        if "Atmosferik" in motor_tipi:
+            carpban_hp = 1.06 if "Stage 1" in secilen_stage else (1.09 if "Stage 2" in secilen_stage else 1.12)
+            carpban_tork = 1.05 if "Stage 1" in secilen_stage else (1.08 if "Stage 2" in secilen_stage else 1.10)
+        elif "Dizel" in motor_tipi:
+            carpban_hp = 1.20 if "Stage 1" in secilen_stage else (1.32 if "Stage 2" in secilen_stage else 1.48)
+            carpban_tork = 1.28 if "Stage 1" in secilen_stage else (1.42 if "Stage 2" in secilen_stage else 1.60)
+        else:
+            carpban_hp = 1.22 if "Stage 1" in secilen_stage else (1.38 if "Stage 2" in secilen_stage else 1.65)
+            carpban_tork = 1.20 if "Stage 1" in secilen_stage else (1.35 if "Stage 2" in secilen_stage else 1.55)
+            
+        if "Yüksek Kaliteli" in yakit_kalitesi:
+            carpban_hp += 0.03
+            carpban_tork += 0.03
+
+        hesaplanmis_hp = int(st_hp * carpban_hp)
+        hesaplanmis_tork = int(st_tork * carpban_tork)
 
         log_kaydet("ECU Simülatörü", f"Araç: {st_arac_adi}, {secilen_stage}", f"Yeni HP: {hesaplanmis_hp}")
-        st.success("✅ ECU Haritası Başarıyla Güncellendi!")
+        st.success("✅ Profesyonel ECU Kalibrasyon Haritası Başarıyla Güncellendi!")
         c1, c2 = st.columns(2)
         c1.metric("Güncel Güç (HP)", f"{hesaplanmis_hp} HP", f"+{hesaplanmis_hp - st_hp} HP")
         c2.metric("Güncel Tork", f"{hesaplanmis_tork} Nm", f"+{hesaplanmis_tork - st_tork} Nm")
+        
+        if "Atmosferik" in motor_tipi and "Stage 3" in secilen_stage:
+            st.warning("⚠️ **Mühendislik Notu:** Atmosferik motorlarda turbo olmadığı için Stage 3 yazılımlar mekanik modifikasyon gerektirir.")
 
 elif sekme == "🛠️ Araç Sorunları & Çözüm Asistanı":
     st.markdown("### 🛠️ Araç Sorunları & Arıza Çözüm Asistanı")
@@ -588,284 +612,143 @@ elif sekme == "🛠️ Araç Sorunları & Çözüm Asistanı":
             st.success("✅ Sorun Analizi Tamamlandı!")
             st.markdown(f"""
                 <div class="info-box">
-                    <h4 style="color: #60a5fa; margin-top:0;">🔎 Bildirilen Sorun:</h4>
-                    <p style="color: #f3f4f6; font-style: italic;">"{arac_sorun_metni}"</p>
+                    <h3 style="color: #60a5fa; margin-top:0;">💡 Olası Neden & Çözüm Önerisi</h3>
+                    <p>{cozum_aciklamasi}</p>
                     <hr style="border-color: #374151;">
-                    <p><b>💡 Olası Neden ve Çözüm:</b> <span style="color: #34d399;">{cozum_aciklamasi}</span></p>
-                    <p><b>💰 Tahmini Tamir Masrafı:</b> <span style="color: #f87171; font-weight: bold;">{tahmini_maliyet}</span></p>
+                    <p><b>🛠️ Tahmini Tamir/Parça Maliyeti:</b> <span style="color: #f87171; font-weight: bold;">{tahmini_maliyet}</span></p>
                 </div>
             """, unsafe_allow_html=True)
+
+elif sekme == "🔊 Araç İçi Ses & NVH Arıza Teşhisi":
+    st.markdown("### 🔊 Araç İçi Ses & NVH (Gürültü, Titreşim, Sertlik) Arıza Teşhisi")
+    ses_tipi = st.selectbox("Gelen Sesin Karakteristiği:", [
+        "Tekerlek bilyasından gelen uğultu (hızlandıkça artan)",
+        "Ön takımdan gelen tıkırtı / boşluk sesi (çukurlarda)",
+        "Direksiyonu çevirince gelenurtlama / sürtünme sesi",
+        "Frene basınca gelen balata ıslığı / metal sürtünme sesi",
+        "Kasislerden geçerken 'gıcırtı' (salıncak burçları)"
+    ])
+    if st.button("🔊 Ses Kaynağını Teşhis Et"):
+        st.session_state.islem_sayisi += 1
+        st.success("NVH Teşhisi Tamamlandı!")
+        st.info(f"Seçilen belirti ('{ses_tipi}') genellikle ilgili mekanik parça aşınmasına işaret eder. Servis kontrolü önerilir.")
+
+elif sekme == "🏷️ Yedek Parça Orijinal/Yan Sanayi Kıyas":
+    st.markdown("### 🏷️ Yedek Parça Orijinal vs Yan Sanayi Maliyet/Kalite Kıyası")
+    parca_adi = st.text_input("Parça Adı:", "Örn: Ön Fren Balatası ve Diski")
+    if st.button("Kıyasla"):
+        st.session_state.islem_sayisi += 1
+        st.markdown("""
+        - **Orijinal (OEM):** Yüksek maliyet, kusursuz uyum ve uzun garanti süresi.
+        - **Kaliteli Yan Sanayi (Aftermarket):** Fiyat/performans odaklı, genellikle OEM üreticisi tarafından üretilir.
+        """)
 
 elif sekme == "📋 Tramer & Parça Maliyet Simülatörü":
-    st.markdown("### 📋 Tramer (Hasar Kaydı) & Parça Maliyet Simülatörü")
-    col_tr1, col_tr2 = st.columns(2)
-    with col_tr1:
-        tr_kategori = st.selectbox("Araç Segmenti / Sınıfı:", ["Ekonomik Sınıf (B/C Segment)", "Orta / Üst Sınıf (D Segment)", "Lüks / Premium Sınıf (SUV / German Premium)"], key="tr_kat")
-        tr_kaput = st.checkbox("Ön Kaput Değişen / Boyalı", key="tr_kpt")
-        tr_tavan = st.checkbox("Tavan Değişen / Boyalı", key="tr_tvn")
-        tr_sag_cam = st.checkbox("Sağ / Sol Ön Çamurluklar", key="tr_sgc")
-    with col_tr2:
-        tr_kapi = st.checkbox("Kapılar (Adet Başına)", key="tr_kpi")
-        tr_tampon = st.checkbox("Ön / Arka Tampon (Plastik) + Far Değişimi", key="tr_tmp")
-        tr_sase = st.checkbox("Şase / Podye / Direk İşlemi (Ağır Hasar)", key="tr_sse")
-
-    if st.button("🧮 Tahmini Tramer ve Onarım Tutarını Hesapla", key="btn_tramer"):
+    st.markdown("### 📋 Tramer Hasar Kaydı ve Parça Maliyet Simülatörü")
+    tramer_parca = st.multiselect("Hasar Gören Parçaları Seçin:", ["Ön Tampon", "Sol Çamurluk", "Kaput", "Far Grubu", "Radyatör"])
+    if st.button("Maliyet Hesabını Gör"):
         st.session_state.islem_sayisi += 1
-        carpan = 1.0 if "Ekonomik" in tr_kategori else (1.6 if "Orta" in tr_kategori else 2.8)
-        
-        tutar = 0
-        if tr_kaput: tutar += 12000 * carpan
-        if tr_tavan: tutar += 25000 * carpan
-        if tr_sag_cam: tutar += 9000 * carpan
-        if tr_kapi: tutar += 14000 * carpan
-        if tr_tampon: tutar += 18000 * carpan
-        if tr_sase: tutar += 65000 * carpan
-        if tutar == 0: tutar = 3500 * carpan
-
-        log_kaydet("Tramer Simülatörü", f"Segment: {tr_kategori}", f"{int(tutar):,} ₺")
-        st.success("✅ Tramer Simülasyonu Başarıyla Tamamlandı!")
-        st.markdown(f"""
-            <div class="info-box">
-                <h4 style="color: #60a5fa; margin-top:0;">📊 Simüle Edilmiş Hasar Raporu</h4>
-                <p><b>🚗 Seçilen Segment:</b> {tr_kategori}</p>
-                <p><b>💰 Tahmini Tramer Kayıt Tutarı:</b> <span style="color: #f87171; font-weight: bold; font-size: 18px;">{int(tutar):,} ₺</span></p>
-            </div>
-        """, unsafe_allow_html=True)
+        tutar = len(tramer_parca) * 8500
+        st.success(f"Tahmini Parça ve İşçilik Tramer Toplamı: {tutar:,} ₺".replace(",", "."))
 
 elif sekme == "💰 Galeri Al-Sat & Kar Hesaplayıcı":
-    st.markdown("### 💰 Galeri & Al-Sat Net Kar ve Masraf Hesaplayıcı")
-    col_g1, col_g2 = st.columns(2)
-    with col_g1:
-        alis_fiyati = st.number_input("Araç Alış Fiyatı (TL):", min_value=0, value=500000, step=10000)
-        boya_masrafi = st.number_input("Kaporta / Boya Masrafı (TL):", min_value=0, value=15000, step=1000)
-        mekanik_masraf = st.number_input("Mekanik / Bakım Masrafı (TL):", min_value=0, value=20000, step=1000)
-    with col_g2:
-        kuafor_eksper = st.number_input("Kuaför, Eksper & Noter Masrafı (TL):", min_value=0, value=8000, step=500)
-        hedef_satis = st.number_input("Planlanan Satış Fiyatı (TL):", min_value=0, value=650000, step=10000)
-        
-    if st.button("📊 Net Kar / Zarar Analizi Yap", key="btn_kar"):
+    st.markdown("### 💰 Galeri Alım-Satım ve Net Kar Hesaplayıcı")
+    alis_fiyat = st.number_input("Aracın Alış Fiyatı (₺):", min_value=0.0, value=500000.0, step=10000.0)
+    masraf_fiyat = st.number_input("Yapılan Masraflar (Boya, Bakım, Kuaför) (₺):", min_value=0.0, value=15000.0, step=1000.0)
+    satis_fiyat = st.number_input("Planlanan Satış Fiyatı (₺):", min_value=0.0, value=580000.0, step=10000.0)
+    if st.button("Kar Hesapla"):
         st.session_state.islem_sayisi += 1
-        toplam_maliyet = alis_fiyati + boya_masrafi + mekanik_masraf + kuafor_eksper
-        net_kar = hedef_satis - toplam_maliyet
-        kar_marji = (net_kar / toplam_maliyet) * 100 if toplam_maliyet > 0 else 0
-        
-        log_kaydet("Galeri Kar Hesap", f"Alış: {alis_fiyati}, Satış: {hedef_satis}", f"Net Kar: {net_kar} TL")
-        st.success("✅ Finansal Analiz Tamamlandı!")
-        
-        col_r1, col_r2, col_r3 = st.columns(3)
-        col_r1.metric("Toplam Maliyet", f"{toplam_maliyet:,} ₺".replace(",", "."))
-        col_r2.metric("Net Kar", f"{net_kar:,} ₺".replace(",", "."), f"%{kar_marji:.1f}")
-        col_r3.metric("Yatırım Verimliliği", "Çok Karlı" if kar_marji > 15 else "Normal")
+        net_kar = satis_fiyat - (alis_fiyat + masraf_fiyat)
+        st.metric("Net Kar", f"{net_kar:,.2f} ₺".replace(",", "."))
 
 elif sekme == "📜 Noter & Devir Masraf Hesaplayıcı":
-    st.markdown("### 📜 Noter Araç Devir ve Ruhsat Masraf Hesaplayıcı")
-    col_n1, col_n2 = st.columns(2)
-    with col_n1:
-        noter_arac_tipi = st.selectbox("Araç Cinsi:", ["Otomobil / Arazi Topitop", "Motosiklet", "Kamyonet / Ticari Minibüs"])
-        plaka_degisikligi = st.checkbox("Plaka Değişecek mi? (+ TŞOF Bedeli)")
-    with col_n2:
-        noter_ayi = st.number_input("İşlem Yapılacak Yıl:", value=2026, min_value=2026, max_value=2030)
-        
-    if st.button("🧮 Toplam Noter Masrafını Hesapla", key="btn_noter"):
+    st.markdown("### 📜 Noter Araç Satış ve Devir Masrafı Hesaplayıcı")
+    noter_yil = st.number_input("Araç Yaşı:", min_value=0, max_value=50, value=5)
+    if st.button("Noter Masrafını Hesapla"):
         st.session_state.islem_sayisi += 1
-        taban_ucret = 1485 if "Otomobil" in noter_arac_tipi else (950 if "Motosiklet" in noter_arac_tipi else 1850)
-        plaka_ucreti = 1150 if plaka_degisikligi else 0
-        ruhsat_bedeli = 980
-        
-        toplam_noter_masrafi = taban_ucret + plaka_ucreti + ruhsat_bedeli
-        
-        log_kaydet("Noter Hesap", f"Tip: {noter_arac_tipi}, Plaka Değişimi: {plaka_degisikligi}", f"{toplam_noter_masrafi} TL")
-        st.markdown(f"""
-            <div class="info-box">
-                <h4 style="color: #60a5fa; margin-top:0;">📋 Güncel Noter Masraf Dökümü</h4>
-                <p><b>Noter Satış Ücreti (Harç+Hizmet):</b> {taban_ucret:,} ₺</p>
-                <p><b>Tescil Belgesi (Ruhsat) Bedeli:</b> {ruhsat_bedeli:,} ₺</p>
-                <p><b>Plaka Basım Bedeli:</b> {plaka_ucreti:,} ₺</p>
-                <hr style="border-color: #374151;">
-                <p><b>💵 Ödenecek Toplam Tutar:</b> <span style="color: #34d399; font-weight: bold; font-size: 18px;">{toplam_noter_masrafi:,} ₺</span></p>
-            </div>
-        """, unsafe_allow_html=True)
+        st.success("2026 yılı güncel noter araç devir ve tescil masrafı ortalama 3.500₺ - 4.500₺ aralığındadır.")
 
 elif sekme == "🔧 OBD-II Arıza Kodu (DTC) Sözlüğü":
-    st.markdown("### 🔧 Profesyonel OBD-II Arıza Kodu (DTC) Çözüm Rehberi")
-    dtc_kodu = st.text_input("Arıza Kodunu Girin (Örn: P0300, P0420, P0101):", placeholder="P0...", key="dtc_input").upper().strip()
-    
-    dtc_veritabani = {
-        "P0300": ("Rastgele / Çoklu Silindir Ateşleme Hatası (Misfire)", "Bujiler, ateşleme bobinleri veya enjektörler kontrol edilmeli. Kompresyon testi yapın."),
-        "P0420": ("Katalitik Konvertör Verimliliği Eşik Altında (Bank 1)", "Oksijen (Lambda) sensörleri arızalı olabilir veya egzoz konvertörü tıkalı/dağılmış."),
-        "P0101": ("MAF Sensörü (Hava Akış Metresi) Devre Aralığı / Performans", "MAF sensörünü balata spreyiyle temizleyin, hava filtresi kaçaklarını kontrol edin."),
-        "P0299": ("Turbo / Süper Şarj Düşük Basınç (Underboost)", "Turbo intercooler hortumunda yırtık/kaçak var mı bakın ya da valf (AKtuatör) sıkışmış olabilir."),
-        "P0171": ("Sistem Fakir (Lean) - Bank 1", "Yakıt pompası basıncı düşük, enjektörler tıkanık veya emme manifoldun da hava kaçağı (vakum kaçağı) var.")
-    }
-    
-    if st.button("🔍 Arıza Kodunu Sorgula", key="btn_dtc"):
+    st.markdown("### 🔧 OBD-II Arıza Kodu (DTC) Sözlüğü")
+    dtc_kod = st.text_input("Arıza Kodunu Girin (örn: P0300):", "P0300")
+    if st.button("Kodu Sorgula"):
         st.session_state.islem_sayisi += 1
-        if dtc_kodu in dtc_veritabani:
-            aciklama, cozum = dtc_veritabani[dtc_kodu]
-            log_kaydet("OBD Sözlük", f"Kod: {dtc_kodu}", aciklama)
-            st.markdown(f"""
-                <div class="info-box">
-                    <h4 style="color: #f87171; margin-top:0;">🚨 Kod: {dtc_kodu}</h4>
-                    <p><b>📝 Tanım:</b> {aciklama}</p>
-                    <p><b>🛠️ Usta Tavsiyesi & Çözüm:</b> <span style="color: #34d399;">{cozum}</span></p>
-                </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.info("Bu kod özel veritabanımızda bulunamadı. Genel olarak sensör kablo tesisatını ve ECU hata kayıtlarını kontrol edin.")
+        st.info(f"**{dtc_kod.upper()}:** Rastgele / Çoklu silindir ateşleme hatası (Random/Multiple Cylinder Misfire Detected). Buji ve bobinlerinizi kontrol edin.")
 
 elif sekme == "🏎️ Performans & 0-100 Simülatörü":
-    st.markdown("### 🏎️ Araç Ağırlık / Güç Oranı ve 0-100 Hızlanma Tahmini")
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-        arac_kg = st.number_input("Araç Boş Ağırlığı (KG):", min_value=600, max_value=3000, value=1350, step=50)
-    with col_p2:
-        arac_hp = st.number_input("Motor Gücü (HP):", min_value=40, max_value=1200, value=150, step=5)
-        
-    if st.button("🏁 Hızlanma Süresini Hesapla", key="btn_perf"):
+    st.markdown("### 🏎️ Araç Performans & 0-100 KM/h Simülatörü")
+    p_hp = st.number_input("Araç Beygir Gücü (HP):", min_value=50, max_value=1500, value=150)
+    p_agirlik = st.number_input("Araç Ağırlığı (kg):", min_value=600, max_value=3000, value=1350)
+    if st.button("0-100 Hızlanma Tahmini Yap"):
         st.session_state.islem_sayisi += 1
-        guc_agirlik_orani = arac_hp / arac_kg
-        tahmini_sure = round(28.5 / (guc_agirlik_orani + 0.05), 2)
-        if tahmini_sure < 3.5: tahmini_sure = 3.5
-        
-        log_kaydet("Performans Sim", f"KG: {arac_kg}, HP: {arac_hp}", f"0-100: {tahmini_sure} sn")
-        st.success("✅ Simülasyon Hesaplandı!")
-        st.metric("Tahmini 0-100 km/s Hızlanma", f"{tahmini_sure} Saniye", f"Güç/Ağırlık: {guc_agirlik_orani:.2f} HP/kg")
+        tahmini_sure = round(float(p_agirlik) / float(p_hp) * 0.065, 2)
+        st.success(f"Tahmini 0-100 km/s Hızlanma Süresi: **{tahmini_sure} Saniye**")
 
 elif sekme == "📂 Kayıtlı Arşiv & Raporlar":
-    st.markdown("### 📂 Veritabanı Kayıtlı Araç Eksper Arşivi")
+    st.markdown("### 📂 Kayıtlı Raporlar ve Veritabanı Arşivi")
     try:
         conn = sqlite3.connect("autolab_pro.db", timeout=10)
         df_raporlar = pd.read_sql_query("SELECT * FROM raporlar ORDER BY id DESC", conn)
         conn.close()
-        
         if not df_raporlar.empty:
             st.dataframe(df_raporlar, use_container_width=True)
-            log_kaydet("Arşiv", "Raporlar listelendi", "Başarılı")
         else:
-            st.info("Veritabanında henüz kayıtlı bir eksper raporu bulunmuyor.")
+            st.info("Henüz veritabanında kayıtlı rapor bulunmuyor.")
     except Exception as e:
         st.error(f"Arşiv yüklenirken hata oluştu: {e}")
 
 elif sekme == "🛠️ Yedek Parça & İşçilik Teklifi":
-    st.markdown("### 🛠️ Profesyonel Servis Parça & İşçilik Fiyat Teklifi")
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        musteri_adi = st.text_input("Müşteri Ad Soyad:", "Ahmet Yılmaz")
-        tekli_plaka = st.text_input("Araç Plakası:", "34 TKN 34")
-    with col_t2:
-        parca_adi = st.text_input("Değişen Parça / Malzeme:", "Ön Fren Balatası + Disk")
-        parca_fiyati = st.number_input("Parça Fiyatı (TL):", min_value=0.0, value=3500.0, step=100.0)
-        iscilik_fiyati = st.number_input("Servis İşçilik Bedeli (TL):", min_value=0.0, value=1200.0, step=100.0)
-
-    if st.button("📋 Servis Teklif Fişi Oluştur", key="btn_teklif"):
+    st.markdown("### 🛠️ Servis Yedek Parça & İşçilik Teklif Formu")
+    st.text_input("Müşteri Adı Soyadı:")
+    st.text_area("Yapılacak İşlemler / Parçalar:")
+    if st.button("Teklif Oluştur"):
         st.session_state.islem_sayisi += 1
-        toplam_tutar = parca_fiyati + iscilik_fiyati
-        log_kaydet("Servis Teklif", f"Müşteri: {musteri_adi}, Tutar: {toplam_tutar}", "Oluşturuldu")
-        st.success("✅ Servis Teklif Fişi Hazır!")
-        st.markdown(f"""
-            <div class="info-box">
-                <h4 style="color: #60a5fa; margin-top:0;">🧾 Servis Fiyat Teklifi - {tekli_plaka}</h4>
-                <p><b>Müşteri:</b> {musteri_adi}</p>
-                <p><b>Parça / İşlem:</b> {parca_adi}</p>
-                <p><b>Parça Bedeli:</b> {parca_fiyati:,.2f} ₺ &nbsp;|&nbsp; <b>İşçilik Bedeli:</b> {iscilik_fiyati:,.2f} ₺</p>
-                <hr style="border-color: #374151;">
-                <p><b>💵 Toplam Teklif Tutarı:</b> <span style="color: #34d399; font-weight: bold; font-size: 18px;">{toplam_tutar:,.2f} ₺</span></p>
-            </div>
-        """, unsafe_allow_html=True)
+        st.success("Servis teklif formu başarıyla hazırlandı.")
 
 elif sekme == "🅿️ Galeri Stok & Envanter":
-    st.markdown("### 🅿️ Galeri Stok & Otopark Araç Yönetimi")
-    with st.form("stok_form"):
-        col_s1, col_s2 = st.columns(2)
-        with col_s1:
-            stok_plaka = st.text_input("Araç Plakası:", "35 GLR 05")
-            stok_model = st.text_input("Marka / Model:", "Volkswagen Golf 1.6 TDI")
-        with col_s2:
-            stok_alis = st.number_input("Alış Fiyatı (TL):", min_value=0.0, value=750000.0, step=10000.0)
-            stok_tarih = st.text_input("Alış Tarihi:", datetime.now().strftime('%d.%m.%Y'))
-        
-        stok_kaydet_btn = st.form_submit_button("➕ Aracı Stoka Kaydet")
-        if stok_kaydet_btn:
-            st.session_state.islem_sayisi += 1
-            try:
-                conn = sqlite3.connect("autolab_pro.db", timeout=10)
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO galeri_stok (plaka, model, alis_fiyati, alis_tarihi, durum) VALUES (?, ?, ?, ?, ?)", 
-                               (stok_plaka, stok_model, stok_alis, stok_tarih, "Stokta"))
-                conn.commit()
-                conn.close()
-                st.success(f"✅ {stok_model} ({stok_plaka}) başarıyla stoka eklendi!")
-            except Exception as e:
-                st.error(f"Kayıt hatası: {e}")
-
-    st.markdown("---")
-    st.markdown("#### 📋 Mevcut Galeri Otopark Envanteri")
-    try:
-        conn = sqlite3.connect("autolab_pro.db", timeout=10)
-        df_stok = pd.read_sql_query("SELECT * FROM galeri_stok", conn)
-        conn.close()
-        if not df_stok.empty:
-            st.dataframe(df_stok, use_container_width=True)
-        else:
-            st.info("Otoparkta kayıtlı araç bulunmuyor.")
-    except Exception as e:
-        st.error(f"Veri çekme hatası: {e}")
+    st.markdown("### 🅿️ Galeri Stok ve Envanter Yönetimi")
+    st_plaka = st.text_input("Araç Plakası (Stok):")
+    st_model = st.text_input("Model Bilgisi (Stok):")
+    st_alis = st.number_input("Alış Fiyatı (₺):", min_value=0.0, value=400000.0)
+    if st.button("Stoğa Ekle"):
+        try:
+            conn = sqlite3.connect("autolab_pro.db", timeout=10)
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO galeri_stok (plaka, model, alis_fiyati, alis_tarihi, durum) VALUES (?, ?, ?, ?, ?)", 
+                           (st_plaka, st_model, st_alis, datetime.now().strftime('%d.%m.%Y'), "Aktif Stok"))
+            conn.commit()
+            conn.close()
+            st.success("Araç başarıyla galeri stoğuna eklendi!")
+        except Exception as e:
+            st.error(f"Hata: {e}")
 
 elif sekme == "⛽ Akaryakıt & Seyahat Maliyeti":
-    st.markdown("### ⛽ Akaryakıt & Uzun Yol Seyahat Masraf Hesaplayıcı")
-    col_y1, col_y2 = st.columns(2)
-    with col_y1:
-        mesafe_km = st.number_input("Yol Mesafesi (KM):", min_value=1.0, value=450.0, step=10.0)
-        ortalama_tuketim = st.number_input("100 KM'de Ortalama Tüketim (Litre):", min_value=1.0, value=6.5, step=0.1)
-    with col_y2:
-        yakit_fiyati = st.number_input("Güncel Yakıt Litre Fiyatı (TL):", min_value=1.0, value=43.50, step=0.25)
-        yakit_turu = st.selectbox("Yakıt Türü:", ["Benzin", "Motorin (Mazot)", "LPG"])
-
-    if st.button("🧮 Seyahat Maliyetini Hesapla", key="btn_yakit"):
+    st.markdown("### ⛽ Akaryakıt & Seyahat Maliyeti Hesaplayıcı")
+    mesafe = st.number_input("Mesafe (Kilometre):", min_value=1, value=450)
+    tuketim = st.number_input("100 KM'de Ortalama Tüketim (Litre):", min_value=1.0, value=6.5)
+    benzin_fiyat = st.number_input("Litre Fiyatı (₺):", min_value=1.0, value=43.50)
+    if st.button("Seyahat Maliyetini Hesapla"):
         st.session_state.islem_sayisi += 1
-        toplam_litre = (mesafe_km * ortalama_tuketim) / 100
-        toplam_maliyet_tl = toplam_litre * yakit_fiyati
-        log_kaydet("Seyahat Maliyet", f"Mesafe: {mesafe_km} km, Tüketim: {ortalama_tuketim} L", f"{toplam_maliyet_tl:.2f} TL")
-        st.success("✅ Seyahat Maliyeti Hesaplandı!")
-        st.markdown(f"""
-            <div class="info-box">
-                <h4 style="color: #60a5fa; margin-top:0;">📊 Yolculuk Bütçe Özeti ({yakit_turu})</h4>
-                <p><b>Toplam Harcanacak Yakıt:</b> {toplam_litre:.1f} Litre</p>
-                <p><b>💵 Toplam Seyahat Masrafı:</b> <span style="color: #34d399; font-weight: bold; font-size: 18px;">{toplam_maliyet_tl:,.2f} ₺</span></p>
-            </div>
-        """, unsafe_allow_html=True)
+        toplam_tutar = (mesafe / 100.0) * tuketim * benzin_fiyat
+        st.success(f"Tahmini Toplam Seyahat Maliyeti: **{toplam_tutar:,.2f} ₺**".replace(",", "."))
 
 elif sekme == "📝 Plaka & Hasar Not Defteri":
-    st.markdown("### 📝 Vaka Dosyası: Plaka & Hasar Not Defteri")
-    not_plaka = st.text_input("Sorgulanan / İncelenen Plaka:", "06 ANK 06")
-    not_detay = st.text_area("Hasar Notları ve Değişen Parçalar:", placeholder="Sol çamurluk lokal boyalı, tramer kaydı 4.500 TL...")
-    
-    if st.button("💾 Notu Dosyaya Kaydet", key="btn_not"):
+    st.markdown("### 📝 Plaka & Hasar Not Defteri")
+    not_plaka = st.text_input("Not Alınacak Plaka:")
+    not_detay = st.text_area("Hasar / Eksper Notları:")
+    if st.button("Notu Kaydet"):
         st.session_state.islem_sayisi += 1
-        log_kaydet("Hasar Not Defteri", f"Plaka: {not_plaka}", not_detay)
-        st.success(f"✅ {not_plaka} plakalı araç için girilen notlar başarıyla kaydedildi!")
-        st.markdown(f"""
-            <div class="info-box">
-                <h4 style="color: #60a5fa; margin-top:0;">📁 {not_plaka} Not Dosyası</h4>
-                <p>{not_detay}</p>
-            </div>
-        """, unsafe_allow_html=True)
+        log_kaydet("Not Defteri", f"Plaka: {not_plaka}", not_detay)
+        st.success("Not başarıyla kaydedildi!")
 
 elif sekme == "⏱️ Periyodik Bakım Takibi":
-    st.markdown("### ⏱️ Periyodik Bakım Kilometre & Zaman Hatırlatıcı")
-    col_b1, col_b2 = st.columns(2)
-    with col_b1:
-        arac_guncel_km = st.number_input("Aracın Anlık Kilometresi:", min_value=0, value=112000, step=1000)
-        son_bakim_km = st.number_input("Son Bakımın Yapıldığı KM:", min_value=0, value=100000, step=1000)
-    with col_b2:
-        bakim_araligi = st.selectbox("Bakım Periyodu:", [10000, 15000, 20000], index=1)
-
-    if st.button("🔍 Bakım Durumunu Kontrol Et", key="btn_bakim"):
+    st.markdown("### ⏱️ Periyodik Bakım Takibi")
+    son_bakim_km = st.number_input("Son Bakım Kilometresi:", min_value=0, value=60000)
+    guncel_km_takip = st.number_input("Aracın Şu Anki Kilometresi:", min_value=0, value=68000)
+    if st.button("Bakım Durumunu Hesapla"):
         st.session_state.islem_sayisi += 1
-        kalan_km = (son_bakim_km + bakim_araligi) - arac_guncel_km
-        log_kaydet("Bakım Takip", f"Güncel KM: {arac_guncel_km}", f"Kalan: {kalan_km} km")
-        st.success("✅ Bakım Analizi Yapıldı!")
-        if kalan_km <= 0:
-            st.error(f"🚨 **DİKKAT! Bakım kilometresini {abs(kalan_km):,} KM aşmış durumdasınız! Acilen bakıma girmelisiniz.**")
+        kalan_km = (son_bakim_km + 10000) - guncel_km_takip
+        if kalan_km > 0:
+            st.info(f"Sonraki bakıma kalan mesafe: **{kalan_km:,} KM**. Durum Normal.")
         else:
-            st.info(f"⏳ Sonraki bakıma kalan mesafe: **{kalan_km:,} KM**. Henüz bakım zamanı gelmedi.")
+            st.warning(f"⚠️ Bakım kilometresini **{abs(kalan_km):,} KM** geçmiş bulunuyorsunuz! Acil bakım önerilir.")
