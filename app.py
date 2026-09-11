@@ -134,7 +134,7 @@ if st.session_state.islem_sayisi >= toplam_izin_verilen and not st.session_state
     girilen_sifre = st.text_input("🔑 Size Özel Erişim Şifresi:", type="password")
     
     if st.button("Sisteme Giriş Yap", type="primary", use_container_width=True):
-        gecerli_sifreler = ["autolab2026", "pro9955", "vip-oto-sifre", "12345"]
+        gecerli_sifreler = ["autolab2026", "pro9955", "vip-oto-sifre", "AutoLab5234"]
         if girilen_sifre in gecerli_sifreler:
             st.session_state.logged_in = True
             st.session_state.islem_sayisi = 0  
