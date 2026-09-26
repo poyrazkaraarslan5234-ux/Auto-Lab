@@ -12,13 +12,15 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 import streamlit as st
 
 st.set_page_config(
-    page_title='Auto Lab Pro - Ultimate Engineering & Expertise Studio',
+    page_title='Auto Lab Pro - Ultimate Engineering & License Studio',
     page_icon='🚗',
     layout='wide',
 )
 
 WHATSAPP_NUMARASI = '905510305139'
-DISCORD_WEBHOOK_URL = 'BURAYA_DISCORD_WEBHOOK_LINKINI_YAPISTIR'
+DISCORD_WEBHOOK_URL = (
+    'BURAYA_DISCORD_WEBHOOK_LINKINI_YAPISTIR'  # Kendi webhook adresini yazabilirsin
+)
 
 
 def discord_bildirim_gonder(mesaj_baslik, detay_icerik):
@@ -35,7 +37,7 @@ def discord_bildirim_gonder(mesaj_baslik, detay_icerik):
           'description': detay_icerik,
           'color': 3447003,
           'timestamp': datetime.utcnow().isoformat(),
-          'footer': {'text': 'Auto Lab Pro Ekspertiz ve Güvenlik Modülü'},
+          'footer': {'text': 'Auto Lab Pro Güvenlik ve Lisans Modülü'},
       }],
   }
   try:
@@ -81,6 +83,7 @@ def init_db():
   try:
     conn = sqlite3.connect('autolab_pro.db', timeout=10)
     cursor = conn.cursor()
+    # Raporlar tablosu
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS raporlar (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,6 +96,30 @@ def init_db():
                 tavsiye TEXT
             )
         """)
+    # Kalıcı Lisans / Şifre Tablosu (Güncellemelerde silinmez!)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS lisanslar (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sifre TEXT UNIQUE,
+                musteri_adi TEXT,
+                aktif_mi INTEGER DEFAULT 1,
+                eklenme_tarihi TEXT
+            )
+        """)
+    # Varsayılan master şifreleri veritabanına ekle (Eğer yoksa)
+    varsayilan_sifreler = [
+        ('autolab2026', 'Ana Yönetici'),
+        ('pro9955', 'VIP Bayi 1'),
+        ('vip-oto-sifre', 'VIP Bayi 2'),
+        ('AutoLab5234', 'Poyraz Özel'),
+    ]
+    for sifre, ad in varsayilan_sifreler:
+      cursor.execute(
+          'INSERT OR IGNORE INTO lisanslar (sifre, musteri_adi, aktif_mi,'
+          ' eklenme_tarihi) VALUES (?, ?, 1, ?)',
+          (sifre, ad, datetime.now().strftime('%d.%m.%Y')),
+      )
+
     conn.commit()
     conn.close()
   except Exception as e:
@@ -100,6 +127,21 @@ def init_db():
 
 
 init_db()
+
+
+def lisans_kontrol(girilen_sifre):
+  try:
+    conn = sqlite3.connect('autolab_pro.db', timeout=10)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT aktif_mi FROM lisanslar WHERE sifre = ? AND aktif_mi = 1',
+        (girilen_sifre,),
+    )
+    sonuc = cursor.fetchone()
+    conn.close()
+    return sonuc is not None
+  except Exception:
+    return False
 
 
 def qr_olustur(veri_metni, dosya_adi='qr_temp.png'):
@@ -289,17 +331,17 @@ if (
       '🔑 Size Özel Erişim Şifresi:', type='password'
   )
   if st.button('Sisteme Giriş Yap', type='primary', use_container_width=True):
-    if girilen_sifre in ['autolab2026', 'pro9955', 'vip-oto-sifre']:
+    if lisans_kontrol(girilen_sifre):
       st.session_state.logged_in = True
       st.session_state.islem_sayisi = 0
       st.success('Giriş başarılı!')
       discord_bildirim_gonder(
           'VIP Giriş Yapıldı',
-          'Bir kullanıcı VIP şifre ile sisteme giriş sağladı.',
+          'Bir kullanıcı veritabanı onaylı VIP şifre ile giriş yaptı.',
       )
       st.rerun()
     else:
-      st.error('Hatalı şifre!')
+      st.error('Hatalı veya geçersiz şifre!')
   st.stop()
 
 st.markdown(
@@ -316,7 +358,7 @@ st.markdown(
     </style>
     <div class="hero-card">
         <div class="hero-title">🚗 AUTO LAB PRO - ULTIMATE EDITION</div>
-        <div style="color: #38bdf8; font-size: 16px;">Kurumsal Ekspertiz, Şema Analizi ve Discord Bildirim Merkezi</div>
+        <div style="color: #38bdf8; font-size: 16px;">Kurumsal Ekspertiz, Kalıcı Lisans ve Discord Bildirim Merkezi</div>
     </div>
 """,
     unsafe_allow_html=True,
@@ -341,6 +383,7 @@ sekme = st.selectbox(
     [
         '🔍 Ekspertiz Şeması & PDF Rapor Oluştur',
         '📋 Kayıtlı Raporlar Arşivi',
+        '🔑 Lisans / Bayi Yönetimi',
     ],
 )
 
@@ -394,11 +437,11 @@ if 'Ekspertiz Şeması' in sekme:
   ):
     st.session_state.islem_sayisi += 1
 
-    # Basit risk değerlendirmesi
     risk_durumu = (
         '⚠️ Şase/Podye İşlemli veya Değişen Parça Var!'
         if 'Değişen' in list(sema_dict.values())
-        or 'Şase ve Podye İşlemli' in sema_dict.values()
+        or 'Şase ve Podye' in sema_dict
+        and sema_dict['Şase ve Podye'] != 'Orijinal'
         else '🔥 Hatasız / Temiz Kondisyon. Alınabilir.'
     )
 
@@ -414,7 +457,6 @@ if 'Ekspertiz Şeması' in sekme:
         risk_durumu,
     )
 
-    # Veritabanına kaydet
     try:
       conn = sqlite3.connect('autolab_pro.db', timeout=10)
       cursor = conn.cursor()
@@ -438,17 +480,13 @@ if 'Ekspertiz Şeması' in sekme:
     except Exception as e:
       print(f'DB kayıt hatası: {e}')
 
-    # Discord bildirimi gönder
     discord_bildirim_gonder(
         'Yeni Kurumsal Ekspertiz Raporu Hazırlandı!',
         f'**Plaka:** {plaka}\n**Model:** {marka_model}\n**Analiz Sonucu:**'
         f' {risk_durumu}',
     )
 
-    st.success(
-        'Rapor başarıyla oluşturuldu ve veritabanına işlendi! Discord'
-        ' bildirimi gönderildi.'
-    )
+    st.success('Rapor başarıyla oluşturuldu ve Discord bildirimi gönderildi!')
 
     with open(pdf_dosya, 'rb') as f:
       st.download_button(
@@ -458,7 +496,7 @@ if 'Ekspertiz Şeması' in sekme:
           mime='application/pdf',
       )
 
-else:
+elif 'Arşiv' in sekme:
   st.subheader('📋 Kayıtlı Raporlar Arşivi')
   try:
     conn = sqlite3.connect('autolab_pro.db')
@@ -470,3 +508,47 @@ else:
       st.info('Henüz kayıtlı rapor bulunmuyor.')
   except Exception as e:
     st.error(f'Arşiv yüklenirken hata oluştu: {e}')
+
+else:
+  st.subheader('🔑 Lisans / Bayi Yönetimi (Kalıcı Veritabanı)')
+  st.write(
+      'Buradan yeni müşteri şifreleri ekleyebilir veya mevcut lisansları'
+      ' yönetebilirsin. Bu şifreler veritabanında saklandığı için güncellemelerde'
+      ' asla silinmez.'
+  )
+
+  yeni_sifre = st.text_input('Yeni Lisans Şifresi:')
+  musteri_adi = st.text_input('Müşteri / Bayi Adı:')
+  if st.button('Yeni Lisans Ekle'):
+    if yeni_sifre and musteri_adi:
+      try:
+        conn = sqlite3.connect('autolab_pro.db', timeout=10)
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO lisanslar (sifre, musteri_adi, aktif_mi,'
+            ' eklenme_tarihi) VALUES (?, ?, 1, ?)',
+            (yeni_sifre, musteri_adi, datetime.now().strftime('%d.%m.%Y')),
+        )
+        conn.commit()
+        conn.close()
+        st.success(
+            f'"{musteri_adi}" için lisans şifresi başarıyla veritabanına'
+            ' eklendi!'
+        )
+      except Exception as e:
+        st.error(f'Hata (Bu şifre zaten kayıtlı olabilir): {e}')
+    else:
+      st.warning('Lütfen şifre ve müşteri adı girin.')
+
+  st.markdown('---')
+  st.markdown('### 📄 Aktif Lisans Listesi')
+  try:
+    conn = sqlite3.connect('autolab_pro.db')
+    df_lisans = pd.read_sql_query(
+        'SELECT id, sifre, musteri_adi, aktif_mi, eklenme_tarihi FROM lisanslar',
+        conn,
+    )
+    conn.close()
+    st.dataframe(df_lisans, use_container_width=True)
+  except Exception as e:
+    st.error(f'Lisanslar yüklenirken hata: {e}')
