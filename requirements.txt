@@ -1,5 +1,6 @@
 streamlit
-reportlab
-qrcode
-requests
 pandas
+requests
+beautifulsoup4
+apscheduler
+openpyxl
