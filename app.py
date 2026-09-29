@@ -1,1110 +1,783 @@
-from datetime import datetime
+import hashlib
+import csv
+import datetime
 import io
-import sqlite3
-from apscheduler.schedulers.background import BackgroundScheduler
-from bs4 import BeautifulSoup
 import pandas as pd
 import requests
+import sqlite3
 import streamlit as st
 
+# Streamlit Sayfa Yapılandırması
 st.set_page_config(
-    page_title='Auto Lab / Auto Lab Pro', page_icon='🚗', layout='wide'
+    page_title="AUTO-LAB Pro",
+    page_icon="🚗",
+    layout="wide",
 )
 
-WHATSAPP_NUMARASI = '905510305139'
-DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1548444040037662790/Yo7pYhJbWfSqzjWPVuwGrpQpuGlUYJO4uVIcA3ZRI4zSupvYNsu6m62BIZwDxFaRyDXl'
-ADMIN_SIFRE = 'poyrazadmin'  # Gizli admin şifresi
-
-
-def discord_bildirim_gonder(mesaj_baslik, detay_icerik):
-  if not DISCORD_WEBHOOK_URL or not DISCORD_WEBHOOK_URL.startswith('https://'):
-    return
-
-  embed_data = {
-      'username': 'Auto Lab Güvenlik Botu',
-      'embeds': [{
-          'title': f'🚨 {mesaj_baslik}',
-          'description': detay_icerik,
-          'color': 16711680,
-          'timestamp': datetime.utcnow().isoformat(),
-          'footer': {'text': 'Auto Lab Şikayet & Takip Modülü'},
-      }],
-  }
-  try:
-    requests.post(DISCORD_WEBHOOK_URL, json=embed_data, timeout=3)
-  except Exception as e:
-    print(f'Discord bildirim hatası: {e}')
-
-
-# Arayüzü Geliştiren Özel CSS Tasarımları
+# --- ÖZEL MODERN CSS VE KAYAN DUYURU ANİMASYONU ---
 st.markdown(
     """
     <style>
-    .stDeployButton { display: none !important; }
-    .main { background-color: #0b0f19; }
-    .stApp { background-color: #0b0f19; color: #f3f4f6; }
-    
-    [data-testid="stSidebar"] {
-        background-color: #111827;
-        border-right: 1px solid #1f2937;
+    .main {
+        background-color: #0e1117;
     }
-    
-    .hero-card {
-        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-        border: 1px solid #374151; 
-        padding: 25px; 
-        border-radius: 20px;
-        text-align: center; 
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); 
-        margin-bottom: 25px;
-        margin-top: 10px;
-    }
-    .hero-title { color: #60a5fa; font-size: 34px; font-weight: 900; margin-bottom: 5px; }
-    .hero-subtitle { font-size: 16px; color: #38bdf8; }
-
-    .fixed-whatsapp {
-        position: fixed;
-        top: 15px;
-        left: 20px;
-        z-index: 999999;
-        background-color: #25d366;
-        color: white;
-        padding: 8px 14px;
-        border-radius: 20px;
+    .stButton>button {
+        border-radius: 8px;
         font-weight: bold;
-        font-size: 13px;
-        text-decoration: none;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        border-color: #ff4b4b;
+        color: #ff4b4b;
+    }
+    
+    @keyframes slideDown {
+        0% {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .announcement-banner {
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        margin-bottom: 20px;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 15px;
+        animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        border-left: 6px solid #60a5fa;
+        font-size: 16px;
     }
-    .fixed-whatsapp:hover {
-        background-color: #20ba5a;
-        color: white;
+    
+    .announcement-icon {
+        font-size: 24px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
     }
     </style>
-    """,
+""",
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    f"""
-    <a href="https://wa.me/{WHATSAPP_NUMARASI}?text=Merhaba,%20Auto%20Lab%20için%20şifremi%20almak%20istiyorum." target="_blank" class="fixed-whatsapp">
-        💬 Şifre Al
-    </a>
-    """,
-    unsafe_allow_html=True,
-)
+# --- ARKAPLAN AYARLARI (Güvenli st.secrets Kontrolü) ---
+DEFAULT_WEBHOOK = "https://discord.com/api/webhooks/1548444040037662790/Yo7pYhJbWfSqzjWPVuwGrpQpuGlUYJO4uVIcA3ZRI4zSupvYNsu6m62BIZwDxFaRyDXl"
+try:
+  DISCORD_WEBHOOK_URL = st.secrets.get("DISCORD_WEBHOOK_URL", DEFAULT_WEBHOOK)
+except Exception:
+  DISCORD_WEBHOOK_URL = DEFAULT_WEBHOOK
+
+WHATSAPP_NUMARASI = "905510305139"
 
 
-def init_db():
+def sifre_hashle(sifre):
+  """Şifreyi SHA-256 algoritması ile güvenli bir şekilde hash'ler."""
+  return hashlib.sha256(sifre.encode("utf-8")).hexdigest()
+
+
+def discorda_mesaj_gonder(mesaj):
+  """Arka planda Discord kanalına webhook ile gizli bildirim gönderir."""
+  if not DISCORD_WEBHOOK_URL or not DISCORD_WEBHOOK_URL.startswith("http"):
+    return
   try:
-    with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
+    payload = {"content": mesaj}
+    requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
+  except Exception as e:
+    print(f"Discord mesajı gönderilemedi: {e}")
+
+
+def giris_kaydi_ekle(kullanici_adi, islem_tipi):
+  """Kullanıcının giriş/işlem zamanını veritabanına kaydeder."""
+  try:
+    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
       cursor = conn.cursor()
+      cursor.execute(
+          """
+                INSERT INTO giris_loglari (kullanici_adi, islem_tipi)
+                VALUES (?, ?)
+            """,
+          (kullanici_adi, islem_tipi),
+      )
+      conn.commit()
+  except Exception:
+    pass
+
+
+# Session State Tanımlamaları
+if "aktif_kullanici" not in st.session_state:
+  st.session_state.aktif_kullanici = None
+if "giris_yapildi" not in st.session_state:
+  st.session_state.giris_yapildi = False
+if "sifre_goster" not in st.session_state:
+  st.session_state.sifre_goster = False
+if "is_admin" not in st.session_state:
+  st.session_state.is_admin = False
+if "islem_hakki" not in st.session_state:
+  st.session_state.islem_hakki = 20
+if "kilitli_mi" not in st.session_state:
+  st.session_state.kilitli_mi = False
+
+# Veritabanı ve Tabloları Güvenceye Alma
+try:
+  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+    cursor = conn.cursor()
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS arama_gecmisi (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici TEXT,
+                aranan_kelime TEXT,
+                bulunan_sonuc_sayisi INTEGER,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS giris_loglari (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici_adi TEXT,
+                islem_tipi TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND"
+        " name='kullanicilar'"
+    )
+    tablo_varmi = cursor.fetchone()
+
+    if not tablo_varmi:
       cursor.execute("""
-                CREATE TABLE IF NOT EXISTS kullanicilar (
+                CREATE TABLE kullanicilar (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ad_soyad TEXT,
+                    ad TEXT,
+                    soyad TEXT,
                     eposta TEXT,
                     eposta_sifre TEXT,
                     kullanici_adi TEXT UNIQUE,
                     sifre TEXT,
-                    kayit_tarihi TEXT
+                    is_banned INTEGER DEFAULT 0,
+                    islem_hakki INTEGER DEFAULT 20,
+                    kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-      cursor.execute("""
-                CREATE TABLE IF NOT EXISTS arac_sorulari (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    kullanici TEXT,
-                    soru TEXT,
-                    cevap TEXT,
-                    tarih_saat TEXT
-                )
-            """)
-      cursor.execute("""
-                CREATE TABLE IF NOT EXISTS admin_yenilikler (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    baslik TEXT,
-                    icerik TEXT,
-                    tarih_saat TEXT
-                )
-            """)
-      # Garaj ve Masraf Takip Tablosu
-      cursor.execute("""
-                CREATE TABLE IF NOT EXISTS kullanici_garaj (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    kullanici TEXT,
-                    arac_adi TEXT,
-                    plaka TEXT,
-                    kilometre INTEGER,
-                    yakit_turu TEXT
-                )
-            """)
-      cursor.execute("""
-                CREATE TABLE IF NOT EXISTS arac_masraflar (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    kullanici TEXT,
-                    arac_adi TEXT,
-                    masraf_turu TEXT,
-                    tutar REAL,
-                    aciklama TEXT,
-                    tarih TEXT
-                )
-            """)
-      # OBD-II Arıza Kodları Tablosu
-      cursor.execute("""
-                CREATE TABLE IF NOT EXISTS obd_kodlari (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    kod TEXT UNIQUE,
-                    aciklama TEXT,
-                    cozum TEXT
-                )
-            """)
-      # Varsayılan birkaç OBD kodu ekleyelim
-      varsayilan_kodlar = [
-          (
-              'P0300',
-              'Rastgele / Çoklu Silindir Ateşleme Hatası (Misfire)',
-              (
-                  'Buuji, buji kabloları, ateşleme bobini veya yakit enjektörleri'
-                  ' kontrol edilmelidir.'
-              ),
-          ),
-          (
-              'P0420',
-              'Katalitik Konvertör Verimliliği Eşik Altında (Bank 1)',
-              (
-                  'Egzoz kaçağı, oksijen (lambda) sensörü arızası veya tıkalı'
-                  ' katalitik konvertör.'
-              ),
-          ),
-          (
-              'P0299',
-              'Turbo / Süper Şarj Cihazı Düşük Basınç / Underboost',
-              (
-                  'Turbo hortumlarında kaçak, wastegate takılması veya turbo'
-                  ' valfi (N75) arızası.'
-              ),
-          ),
-          (
-              'P0101',
-              'MAF (Hava Akış) Sensörü Devre Aralığı / Performans Problemi',
-              (
-                  'Hava filtresi kirli olabilir, MAF sensörü kirlenmiş ya da'
-                  ' soketi çıkmış olabilir.'
-              ),
-          ),
-          (
-              'P0113',
-              'Emme Hava Sıcaklığı (IAT) Sensör Devresi Yüksek Giriş',
-              (
-                  'Sıcaklık sensörü soketi çıkmış ya da sensör kablosu kopmuş'
-                  ' olabilir.'
-              ),
-          ),
-          (
-              'P0400',
-              'Egzoz Gazı Devridaim (EGR) Akış Arızası',
-              (
-                  'EGR valfi kurum bağlamış ve tıkanmış olabilir, temizlenmesi'
-                  ' veya değişmesi gerekir.'
-              ),
-          ),
-      ]
-      for k, a, c in varsayilan_kodlar:
+    else:
+      cursor.execute("PRAGMA table_info(kullanicilar)")
+      sutunlar = [sutun[1] for sutun in cursor.fetchall()]
+      if "is_banned" not in sutunlar:
         cursor.execute(
-            'INSERT OR IGNORE INTO obd_kodlari (kod, aciklama, cozum) VALUES'
-            ' (?, ?, ?)',
-            (k, a, c),
+            "ALTER TABLE kullanicilar ADD COLUMN is_banned INTEGER DEFAULT 0"
+        )
+      if "islem_hakki" not in sutunlar:
+        cursor.execute(
+            "ALTER TABLE kullanicilar ADD COLUMN islem_hakki INTEGER DEFAULT 20"
         )
 
-      conn.commit()
-  except Exception as e:
-    print(f'Veritabanı hatası: {e}')
+    conn.commit()
+except Exception:
+  pass
 
+# -------------------------------------------------------------
+# SIDEBAR - DESTEK
+# -------------------------------------------------------------
+st.sidebar.title("🛠️ Destek & İletişim")
+wa_mesaj = (
+    "Selam, AUTO-LAB Pro uygulaması şifremi unuttum. Yardımcı olur musun?"
+)
+wa_link = f"https://wa.me/{WHATSAPP_NUMARASI}?text={requests.utils.quote(wa_mesaj)}"
+st.sidebar.markdown(
+    f'<a href="{wa_link}" target="_blank"><button'
+    ' style="background-color:#25D366; color:white; border:none;'
+    " padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer;"
+    ' width:100%;">💬 WhatsApp ile Şifre İste</button></a>',
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown("---")
 
-init_db()
+# -------------------------------------------------------------
+# GİRİŞ / KAYIT EKRANI
+# -------------------------------------------------------------
+if not st.session_state.giris_yapildi:
+  st.title("🚗 AUTO-LAB Pro - Giriş / Kayıt Paneli")
+  tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Yeni Hesap Oluştur"])
 
+  with tab_giris:
+    st.subheader("Hesabınıza Giriş Yapın")
+    g_kullanici = st.text_input("Kullanıcı Adı:", key="giris_kadi")
 
-def tabloyu_guncelle():
-  try:
-    with sqlite3.connect('autolab_pro.db') as conn:
-      cursor = conn.cursor()
-      cursor.execute('PRAGMA table_info(kullanicilar)')
-      sutunlar = [s[1] for s in cursor.fetchall()]
-      if 'eposta_sifre' not in sutunlar:
-        cursor.execute('ALTER TABLE kullanicilar ADD COLUMN eposta_sifre TEXT')
-      conn.commit()
-  except Exception:
-    pass
-
-
-tabloyu_guncelle()
-
-
-def otomobil_verisi_cek_ve_ekle():
-  url = 'https://www.google.com/search?q=araba+arizalari+ve+cozumleri+teknik'
-  headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-
-  try:
-    response = requests.get(url, headers=headers, timeout=5)
-    if response.status_code == 200:
-      soup = BeautifulSoup(response.text, 'html.parser')
-      cekilen_veriler = []
-      for g in soup.find_all('div', class_='BNeawe'):
-        metin = g.get_text()
-        if any(
-            kelime in metin.lower()
-            for kelime in ['araba', 'motor', 'araç', 'arıza', 'direksiyon']
-        ):
-          cekilen_veriler.append(metin)
-
-      with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-        cursor = conn.cursor()
-        for veri in cekilen_veriler[:3]:
-          cursor.execute(
-              """
-                        INSERT INTO arac_sorulari (kullanici, soru, cevap, tarih_saat)
-                        VALUES (?, ?, ?, datetime('now'))
-                    """,
-              (
-                  'Web_Oto_Bot',
-                  'İnternetten Otomatik Çekilen Arıza',
-                  veri,
-              ),
-          )
-        conn.commit()
-      return True
-  except Exception as e:
-    print(f'Veri çekme hatası: {e}')
-  return False
-
-
-def haftalik_oto_veri_guncelleme():
-  print('🔄 Haftalık otomatik araba verisi taraması başlatıldı...')
-  basarili = otomobil_verisi_cek_ve_ekle()
-  if basarili:
-    print('✅ Haftalık web taraması tamamlandı, yeni veriler eklendi.')
-  else:
-    print('⚠️ Haftalık taramada veri alınamadı.')
-
-
-if 'scheduler_started' not in st.session_state:
-  try:
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(haftalik_oto_veri_guncelleme, 'interval', weeks=1)
-    scheduler.start()
-    st.session_state.scheduler_started = True
-  except Exception as e:
-    print(f'Zamanlayıcı başlatılamadı: {e}')
-
-
-def oto_uzman_cevapla(soru):
-  s = soru.lower().strip()
-
-  # 1. OBD-II Arıza Kodu Kontrolü (Örn: P0300, p0420 vb.)
-  if (
-      any(s.startswith(p) for p in ['p', 'c', 'b', 'u'])
-      and len(s) >= 4
-      and s[1:5].isdigit()
-  ):
-    kod_aranan = s[:5].upper()
-    try:
-      with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            'SELECT kod, aciklama, cozum FROM obd_kodlari WHERE kod = ?',
-            (kod_aranan,),
-        )
-        res = cursor.fetchone()
-        if res:
-          return f"""🔍 **OBD-II Arıza Kodu Analizi: `{res[0]}`**
-* **Açıklama:** {res[1]}
-* **Olası Çözüm / Müdahale:** {res[2]}"""
-    except Exception:
-      pass
-    return f"""🔍 **OBD-II Arıza Kodu: `{kod_aranan}`**
-Bu kod veritabanımızda kayıtlı özel bir arıza kodudur. Genellikle ilgili sensör devresinde veya motor bileşeninde sapma olduğunu gösterir. Detaylı OBD cihazı ile hata hafızasının silinip tekrarlayıp tekrarlamadığına bakılmalıdır."""
-
-  # 2. Yakıt Maliyet / Tüketim Hesaplama Yardımı
-  if 'yakıt' in s or 'tüketim' in s or 'km' in s and 'yakar' in s:
-    return """⛽ **Yakıt Tüketimi & Maliyet Hesaplama Modülü:**
-Sol taraftaki menüden veya alt kısımdan **"🚗 Garajım & Masraf Takip"** sekmesine giderek aracına ait litre fiyatı ve kat edilen mesafeyi girip anlık ne kadar yaktığını nokta atışı hesaplayabilirsin!"""
-
-  # 3. Klasik Arıza Cevapları
-  if any(
-      k in s
-      for k in [
-          'sağa çekiyor',
-          'saga cekiyor',
-          'sola çekiyor',
-          'tarafa çekiyor',
-          'direksiyon çekiyor',
-      ]
-  ):
-    return """🚗 **Araba Neden Sağa veya Sola Çeker? (Teknik Analiz)**
-Araç düz yolda giderken bir tarafa çekiyorsa başlıca nedenleri şunlardır:
-1. **Lastik Basınçları:** Sağ veya sol tekerlek hava basınçlarının eşit olmaması.
-2. **Rot Ayarı Bozukluğu:** Ön düzen geometri açılarının bozulması.
-3. **Fren Kaliper Sıkışması:** Balatanın diske sürekli sürtünmesi ve o tekerleğe fren etkisi yapması.
-4. **Aks veya Salıncak Eğriliği:** Yürüyen aksamda darbe kaynaklı deformasyon."""
-
-  elif any(
-      k in s
-      for k in ['diferansiyel', 'defransiyel', 'defransiyal', 'uğultu', 'vınlama']
-  ):
-    return """⚙️ **Diferansiyel Arızası ve Ses Nedenleri:**
-Araç altından gelen uğultu ve seslerin başlıca sebepleri:
-1. **Yağ Eksikliği / Kalitesizliği:** Dişlilerin yağsız kalması sonucu aşırı sürtünme ve metalik uğultu.
-2. **Mahruti ve Pinyon Dişli Aşınması:** Yük altında artan karakteristik vınlama sesi.
-3. **Rulman (Bilya) Dağılması:** Hız artışına paralel olarak şiddetlenen metalik hırıltı."""
-
-  elif any(
-      k in s
-      for k in [
-          'akü',
-          'aku',
-          'marş basmıyor',
-          'zor çalışıyor',
-          'kutup başı',
-          'oksit',
-      ]
-  ):
-    return """🔋 **Akü Problemleri ve Nedenleri:**
-Marş basmama veya zor çalışmaya neden olur. Genellikle ömrünün bitmesi, şarj dinamosunun aküyü doldurmaması veya kutup başlarının oksitlenmesinden kaynaklanır."""
-
-  elif any(
-      k in s
-      for k in [
-          'hararet',
-          'isindi',
-          'su kaynat',
-          'fan arızası',
-          'motor hararet',
-          'su eksil',
-      ]
-  ):
-    return """🔥 **Motor Hararet Yapması:**
-Soğutma suyu eksilmesi veya fan arızasından dolayı motorun aşırı ısınmasıdır. Kırmızı ikaz lambası yanarsa veya hararet ibresi yükselirse motor yatak sarmaması için araç derhal durdurulmalıdır."""
-
-  elif any(
-      k in s
-      for k in ['şanzıman', 'sanziman', 'vites geçiş', 'sarsıntı', 'gecikme']
-  ):
-    return """⚙️ **Şanzıman Sorunları:**
-Vites geçişlerinde sarsıntı veya gecikme yaşanmasıdır. Çoğu zaman şanzıman yağının azalması, kavrama aşınması veya valf gövdesi (mekatronik) arızalarından ortaya çıkar."""
-
-  elif any(
-      k in s
-      for k in ['elektrik', 'farlar', 'sigorta', 'kablo', 'sensör arızası']
-  ):
-    return """⚡ **Elektrik Arızaları:**
-Farların yanmaması, akünün boşalması veya sigorta atması gibi kablo, şasi veya sensör kaynaklı elektriksel problemlerdır. Multimetre ile tesisat kontrolü gerekir."""
-
-  elif any(
-      k in s
-      for k in ['turbo', 'ıslık', 'çekişten düştü', 'siyah duman', 'slik sesi']
-  ):
-    return """💨 **Turbo Arızaları ve Çekiş Düşüklüğü:**
-1. **Turbo Mil Boşluğu:** Islık sesine benzer tiz bir ses çıkarır ve zamanla turbo arızasına yol açar.
-2. **Intercooler (Hava Soğutucu) Hortumu Deformasyonu:** Hava kaçağına sebep olarak aracın çekişten düşmesine ve siyah duman atmasına neden olur."""
-
-  elif any(
-      k in s
-      for k in [
-          'fren titriyor',
-          'frene basınca titreme',
-          'disk',
-          'balata gıcırtısı',
-          'frene basınca',
-      ]
-  ):
-    return """🛑 **Fren Sistemi Sorunları:**
-1. **Fren Diski Eğilmesi (Çarpılması):** Özellikle yüksek hızlarda frene basıldığında direksiyonda hissedilen şiddetli titremenin ana nedenidir.
-2. **Balata Aşınması:** Balataların bitmesi veya sürtünme yüzeyinin camlaşması rahatsız edici gıcırtı seslerine yol açar."""
-
-  elif any(
-      k in s
-      for k in ['mavi duman', 'beyaz duman', 'egzoz dumanı', 'su eksiltiyor']
-  ):
-    return """🌫️ **Egzoz Dumanı Renk Analizi:**
-1. **Mavi Duman:** Piston segmanlarının veya turbo keçelerinin aşınması sonucu motorun yağ yaktığını gösterir.
-2. **Beyaz / Yoğun Buhar:** Genellikle silindir kapak contasının yanması nedeniyle soğutma suyunun yanma odasına sızmasıdır."""
-
-  elif any(
-      k in s
-      for k in [
-          'motor ses',
-          'motordan ses',
-          'motor sesi',
-          'gürültü',
-          'vuruntu',
-          'şakırtı',
-      ]
-  ):
-    return """🔊 **Arabanın Motorundan Gereğinden Fazla Ses Gelmesi:**
-1. **Supap Boşluğu:** Üst kapaktan gelen metalik şakırtı sesleri.
-2. **Motor Yağı Eksikliği:** Basınç düştüğünde fincanların sürtünme sesi.
-3. **Triger Zincir Aşınması:** Zincir gergi kütüğünün aşınmasıyla hışırtı gelmesi."""
-
-  elif any(k in s for k in ['amortisör', 'kasis', 'tıkırtı', 'gıcırtı']):
-    return """🛠️ **Amortisör ve Süspansiyon Sesleri:**
-1. **Amortisör Takozu (Kule) Bilyası:** Direksiyonu çevirirken "tak tuk" sesi yapar.
-2. **Z Rotu / Rotiller:** En ufak taşta bile metalik tıkırtı çıkarır."""
-
-  elif any(k in s for k in ['yağ yak', 'yag yak', 'yağ eksilt']):
-    return """🛢️ **Araç Neden Yağ Yakar?**
-Piston segmanlarının aşınması veya turbo keçelerinin bozulup yağı emmeye vermesiyle oluşur."""
-
-  elif any(
-      k in s for k in ['motor ışığı', 'motor arıza', 'ariza lambasi', 'check engine']
-  ):
-    return """⚠️ **Motor Arıza Lambası:** ECU'nun motor yönetim sisteminde (sensörler, ateşleme, emisyon) bir anormallik algıladığını gösterir."""
-
-  else:
-    return f"""🤖 **Oto Uzman AI:** Sorduğun konu (**"{soru}"**) için genel mühendislik veritabanını taradım. Bu durum genellikle **mekanik aşınma, sensör okuma hatası veya basınç kaçağından** kaynaklanır. 
-
-💡 *İpucu:* Soruyu biraz daha detaylandırarak (Örn: "Akü marş basmıyor", "P0300 arıza kodu nedir?" gibi) yazarsan nokta atışı sebebini hemen söyleyebilirim!"""
-
-
-if 'logged_in' not in st.session_state:
-  st.session_state.logged_in = False
-
-if 'aktif_kullanici' not in st.session_state:
-  st.session_state.aktif_kullanici = 'Misafir'
-
-if 'admin_giris' not in st.session_state:
-  st.session_state.admin_giris = False
-
-# Beni Hatırla mekanizması kontrolü
-if not st.session_state.logged_in:
-  try:
-    with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-      cursor = conn.cursor()
-      cursor.execute(
-          "SELECT name FROM sqlite_master WHERE type='table' AND"
-          " name='hatirlanan_oturum'"
+    col_sifre_input, col_sifre_btn = st.columns([4, 1])
+    with col_sifre_input:
+      g_sifre = st.text_input(
+          "Şifre:",
+          type="password" if not st.session_state.sifre_goster else "default",
+          key="giris_sifre",
       )
-      if cursor.fetchone():
-        cursor.execute('SELECT kullanici_adi FROM hatirlanan_oturum LIMIT 1')
-        kayitli_oturum = cursor.fetchone()
-        if kayitli_oturum:
-          st.session_state.logged_in = True
-          st.session_state.aktif_kullanici = kayitli_oturum[0]
-  except Exception:
-    pass
+    with col_sifre_btn:
+      st.write("")
+      st.write("")
+      if st.button(
+          "👁 Göster / Gizle", key="btn_toggle_giris", use_container_width=True
+      ):
+        st.session_state.sifre_goster = not st.session_state.sifre_goster
+        st.rerun()
 
-if not st.session_state.logged_in:
-  st.markdown(
-      """
-        <div style="text-align: center; padding: 25px; background: #111827; border-radius: 20px; border: 1px solid #374151; margin-top: 10px;">
-            <h1 style="color: #60a5fa; margin-bottom: 5px;">🚗 AUTO LAB - GÜVENLİ GİRİŞ</h1>
-            <p style="color: #9ca3af;">Sisteme erişebilmek için lütfen giriş yapın veya yeni bir hesap oluşturun.</p>
-        </div>
-        """,
-      unsafe_allow_html=True,
-  )
+    if st.button("Giriş Yap", use_container_width=True):
+      girilen_kadi = g_kullanici.strip()
+      girilen_sifre = g_sifre.strip()
 
-  st.markdown('<br>', unsafe_allow_html=True)
-  auth_tab1, auth_tab2 = st.tabs([
-      '🔑 Zaten Hesabım Var (Giriş Yap)',
-      '📝 Yeni Hesap Oluştur (Kayıt Ol)',
-  ])
-
-  with auth_tab1:
-    st.subheader('Sisteme Giriş Yap')
-    girilen_kullanici = st.text_input('👤 Kullanıcı Adınız:', key='login_user')
-    girilen_sifre = st.text_input(
-        '🔑 Erişim Şifreniz:', type='password', key='login_pass'
-    )
-    beni_hatirla = st.checkbox(
-        '🧠 Beni Hatırla (Oturumu açık tut)', key='login_remember'
-    )
-
-    if st.button('Giriş Yap', type='primary', use_container_width=True):
-      gecerli_sifreler = [
-          'autolab2026',
-          'pro9955',
-          'vip-oto-sifre',
-          'AutoLab5234',
-      ]
-      db_sifre_uyumlu = False
-      try:
-        with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-          cursor = conn.cursor()
-          cursor.execute(
-              'SELECT sifre FROM kullanicilar WHERE kullanici_adi = ?',
-              (girilen_kullanici,),
-          )
-          row = cursor.fetchone()
-          if row and row[0] == girilen_sifre:
-            db_sifre_uyumlu = True
-      except Exception:
-        pass
-
-      if (
-          girilen_sifre in gecerli_sifreler or db_sifre_uyumlu
-      ) and girilen_kullanici.strip() != '':
-        st.session_state.logged_in = True
-        st.session_state.aktif_kullanici = girilen_kullanici
-
-        if beni_hatirla:
+      if not girilen_kadi:
+        st.error("Lütfen kullanıcı adı alanını doldurun!")
+      elif girilen_kadi.upper() in ["ADMIN", "ADMİN"] and girilen_sifre in [
+          "ADMİN",
+          "ADMIN",
+      ]:
+        st.session_state.aktif_kullanici = "ADMIN"
+        st.session_state.is_admin = True
+        st.session_state.giris_yapildi = True
+        st.session_state.islem_hakki = 999999
+        giris_kaydi_ekle("ADMIN", "Admin Girişi Yaptı")
+        discorda_mesaj_gonder(
+            "🛡 **Admin (ADMİN)** sisteme başarılı bir şekilde giriş yaptı!"
+        )
+        st.success("Admin olarak giriş yapıldı!")
+        st.rerun()
+      else:
+        if not girilen_sifre:
+          st.error("Lütfen şifre alanını doldurun!")
+        else:
           try:
-            with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
               cursor = conn.cursor()
               cursor.execute(
-                  'CREATE TABLE IF NOT EXISTS hatirlanan_oturum (id INTEGER'
-                  ' PRIMARY KEY, kullanici_adi TEXT)'
+                  "SELECT ad, soyad, eposta, eposta_sifre, sifre,"
+                  " is_banned, islem_hakki FROM kullanicilar WHERE"
+                  " kullanici_adi = ?",
+                  (girilen_kadi,),
               )
-              cursor.execute('DELETE FROM hatirlanan_oturum')
+              row = cursor.fetchone()
+              if row and row[4] == sifre_hashle(girilen_sifre):
+                (
+                    db_ad,
+                    db_soyad,
+                    db_eposta,
+                    db_eposta_sifre,
+                    db_sifre,
+                    is_banned,
+                    db_hak,
+                ) = row
+
+                if is_banned == 1:
+                  st.error("⚠️ Bu hesap yönetici tarafından yasaklanmıştır!")
+                else:
+                  st.session_state.aktif_kullanici = girilen_kadi
+                  st.session_state.is_admin = False
+                  st.session_state.giris_yapildi = True
+                  st.session_state.islem_hakki = (
+                      db_hak if db_hak is not None else 20
+                  )
+                  st.session_state.kilitli_mi = False
+
+                  giris_kaydi_ekle(girilen_kadi, "Sisteme Giriş Yaptı")
+                  discorda_mesaj_gonder(
+                      f"🔑 **Kullanıcı Sisteme Giriş Yaptı!**\n• **Ad Soyad:**"
+                      f" {db_ad} {db_soyad}\n• **Kullanıcı Adı:**"
+                      f" `{girilen_kadi}`"
+                  )
+
+                  st.success("Giriş başarılı!")
+                  st.rerun()
+              else:
+                discorda_mesaj_gonder(
+                    f"⚠️ **Hatalı Giriş Denemesi!**\n• Kullanıcı Adı:"
+                    f" `{girilen_kadi}`"
+                )
+                st.error("Kullanıcı adı veya şifre hatalı!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+  with tab_kayit:
+    st.subheader("📝 Yeni Kullanıcı Kaydı")
+    k_ad = st.text_input("Ad:")
+    k_soyad = st.text_input("Soyad:")
+    k_eposta = st.text_input("E-posta Adresi:")
+    k_eposta_sifre = st.text_input("E-posta Şifresi:", type="password")
+    k_kadi = st.text_input("Kullanıcı Adı:")
+    k_sifre = st.text_input("Uygulama Giriş Şifresi:", type="password")
+
+    if st.button("Kayıt Ol", use_container_width=True):
+      if not k_kadi.strip() or not k_sifre.strip():
+        st.error("Kullanıcı adı ve şifre zorunludur!")
+      else:
+        try:
+          with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                        INSERT INTO kullanicilar (ad, soyad, eposta, eposta_sifre, kullanici_adi, sifre, islem_hakki)
+                        VALUES (?, ?, ?, ?, ?, ?, 20)
+                    """,
+                (
+                    k_ad.strip(),
+                    k_soyad.strip(),
+                    k_eposta.strip(),
+                    k_eposta_sifre.strip(),
+                    k_kadi.strip(),
+                    sifre_hashle(k_sifre.strip()),
+                ),
+            )
+            conn.commit()
+
+          giris_kaydi_ekle(k_kadi.strip(), "Yeni Kayıt Oldu")
+          discorda_mesaj_gonder(
+              f"📝 **Yeni Kullanıcı Kaydı Oluşturuldu!**\n• Kullanıcı Adı:"
+              f" `{k_kadi.strip()}`"
+          )
+
+          st.success("Kayıt başarılı! Giriş yapabilirsiniz.")
+        except sqlite3.IntegrityError:
+          st.error("Bu kullanıcı adı zaten alınmış.")
+        except Exception as e:
+          st.error(f"Hata: {e}")
+
+# -------------------------------------------------------------
+# ANA UYGULAMA
+# -------------------------------------------------------------
+else:
+  try:
+    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+      cursor = conn.cursor()
+      cursor.execute(
+          "SELECT message FROM announcements ORDER BY id DESC LIMIT 1"
+      )
+      son_duyuru = cursor.fetchone()
+      if son_duyuru and son_duyuru[0]:
+        st.markdown(
+            f"""
+                <div class="announcement-banner">
+                    <div class="announcement-icon">📢</div>
+                    <div>
+                        <strong>Yeni Yönetici Bildirimi:</strong><br>
+                        {son_duyuru[0]}
+                    </div>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+  except Exception:
+    pass
+
+  if not st.session_state.is_admin:
+    try:
+      with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT islem_hakki FROM kullanicilar WHERE kullanici_adi = ?",
+            (st.session_state.aktif_kullanici,),
+        )
+        hak_row = cursor.fetchone()
+        if hak_row:
+          st.session_state.islem_hakki = hak_row[0]
+    except Exception:
+      pass
+
+  col_baslik1, col_baslik2 = st.columns([4, 1])
+  with col_baslik1:
+    st.title("🚗 AUTO-LAB Pro")
+    st.markdown(f"Hoş geldin, **{st.session_state.aktif_kullanici}**!")
+    if not st.session_state.is_admin:
+      st.info(f"⚡ Kalan İşlem Hakkınız: **{st.session_state.islem_hakki}**")
+  with col_baslik2:
+    st.write("")
+    if st.button("🚪 Çıkış Yap", use_container_width=True):
+      giris_kaydi_ekle(st.session_state.aktif_kullanici, "Çıkış Yaptı")
+      st.session_state.giris_yapildi = False
+      st.session_state.aktif_kullanici = None
+      st.session_state.is_admin = False
+      st.session_state.islem_hakki = 20
+      st.session_state.kilitli_mi = False
+      st.rerun()
+
+  if (
+      not st.session_state.is_admin and st.session_state.islem_hakki <= 0
+  ) or st.session_state.kilitli_mi:
+    st.session_state.kilitli_mi = True
+
+    st.markdown(
+        """
+        <div style="background: linear-gradient(135deg, #b91c1c, #7f1d1d); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(185, 28, 28, 0.4);">
+            <h2 style="margin: 0; color: white;">🔒 AUTO-LAB GÜVENLİK KİLİDİ AKTİF</h2>
+            <p style="margin-top: 8px; font-size: 16px;">Sistem işlem sınırına ulaşıldı. Laboratuvara devam etmek için şifreyi gir ve haklarını yenile!</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_kilit1, col_kilit2, col_kilit3 = st.columns([1, 2, 1])
+    with col_kilit2:
+      kilit_sifre = st.text_input(
+          "AUTO-LAB Kilit Şifresi:",
+          type="password",
+          key="autolab_kilit_input",
+      )
+      if st.button(
+          "🚀 AUTO-LAB Kilidini Aç ve +200 Hak Al", use_container_width=True
+      ):
+        if kilit_sifre.strip() == "AUTOLAB":
+          st.session_state.islem_hakki = 200
+          st.session_state.kilitli_mi = False
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
               cursor.execute(
-                  'INSERT INTO hatirlanan_oturum (kullanici_adi) VALUES (?)',
-                  (girilen_kullanici,),
+                  "UPDATE kullanicilar SET islem_hakki = ? WHERE"
+                  " kullanici_adi = ?",
+                  (200, st.session_state.aktif_kullanici),
               )
               conn.commit()
           except Exception:
             pass
 
-        st.success('Giriş başarılı!')
-        discord_bildirim_gonder(
-            '🔐 Başarılı Giriş Yapıldı',
-            f'**Kullanıcı:** `{girilen_kullanici}` sisteme giriş yaptı.',
-        )
-        st.rerun()
-      else:
-        st.error('Hatalı şifre veya kullanıcı adı!')
-
-  with auth_tab2:
-    st.subheader("Auto Lab'a Kayıt Ol")
-    yeni_ad_soyad = st.text_input('🏷️ Adınız ve Soyadınız:', key='reg_adsoyad')
-    yeni_eposta = st.text_input('📧 E-Posta Adresiniz:', key='reg_eposta')
-    yeni_eposta_sifre = st.text_input(
-        '🔒 E-Posta Şifreniz:', type='password', key='reg_epostasifre'
-    )
-    yeni_kullanici = st.text_input('👤 Kullanıcı Adı Belirle:', key='reg_user')
-    yeni_sifre = st.text_input(
-        '🔑 Sistem Şifresi Belirle:', type='password', key='reg_pass'
-    )
-    yeni_sifre_tekrar = st.text_input(
-        '🔑 Sistem Şifresi Tekrar:', type='password', key='reg_pass_confirm'
-    )
-
-    if st.button('Kayıt Ol', type='secondary', use_container_width=True):
-      if (
-          not yeni_ad_soyad.strip()
-          or not yeni_eposta.strip()
-          or not yeni_eposta_sifre
-          or not yeni_kullanici.strip()
-          or not yeni_sifre
-      ):
-        st.error('Lütfen tüm alanları doldurun!')
-      elif yeni_sifre != yeni_sifre_tekrar:
-        st.error('Sistem şifreleri uyuşmuyor!')
-      else:
-        try:
-          with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-            cursor = conn.cursor()
-            zaman = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            cursor.execute(
-                'INSERT INTO kullanicilar (ad_soyad, eposta, eposta_sifre,'
-                ' kullanici_adi, sifre, kayit_tarihi) VALUES (?, ?, ?, ?, ?, ?)',
-                (
-                    yeni_ad_soyad.strip(),
-                    yeni_eposta.strip(),
-                    yeni_eposta_sifre,
-                    yeni_kullanici.strip(),
-                    yeni_sifre,
-                    zaman,
-                ),
-            )
-            conn.commit()
-
-          discord_bildirim_gonder(
-              '⚠️ YENİ KULLANICI KAYDI VE ŞİFRELERİ',
-              (
-                  f'**Ad Soyad:** {yeni_ad_soyad}\n**Kullanıcı Adı:**'
-                  f' {yeni_kullanici}\n**E-posta:**'
-                  f' {yeni_eposta}\n**E-posta Şifresi:**'
-                  f' `{yeni_eposta_sifre}`\n**Sistem Şifresi:**'
-                  f' `{yeni_sifre}`'
-              ),
+          giris_kaydi_ekle(
+              st.session_state.aktif_kullanici,
+              "AUTO-LAB Kilidini Açtı (+200 Hak)",
           )
-          st.success('Kayıt başarılı! Şimdi giriş yapabilirsin.')
-        except Exception as e:
-          st.error(f'Hata: {e}')
-
-  st.stop()
-
-with st.sidebar:
-  st.markdown('### 🎛️ Kontrol Paneli')
-  st.info(f'👤 **Aktif Üye:**\n\n`{st.session_state.aktif_kullanici}`')
-
-  st.divider()
-
-  if not st.session_state.admin_giris:
-    st.markdown('### 🔐 Yönetici Girişi')
-    girilen_sol_admin_sifre = st.text_input(
-        'Admin Şifresi:', type='password', key='sidebar_admin_pass'
-    )
-    if st.button('Paneli Aç', use_container_width=True):
-      if girilen_sol_admin_sifre == ADMIN_SIFRE:
-        st.session_state.admin_giris = True
-        st.success('Admin yetkisi doğrulandı!')
-        st.rerun()
-      else:
-        st.error('Hatalı admin şifresi!')
-  else:
-    st.success('🛡️ Admin Modu Aktif')
-    st.markdown('### 🛠️ Yönetici Özel Araçları')
-
-    st.markdown('#### ➕ Sayfaya Yenilik Ekle')
-    yeni_baslik = st.text_input('Yenilik Başlığı:', key='admin_yenilik_baslik')
-    yeni_icerik_metin = st.text_area(
-        'Yenilik Detayı:', key='admin_yenilik_icerik'
-    )
-
-    if st.button('Yeniliği Yayınla', use_container_width=True):
-      if yeni_baslik.strip() and yeni_icerik_metin.strip():
-        try:
-          with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-            cursor = conn.cursor()
-            zaman = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            cursor.execute(
-                'INSERT INTO admin_yenilikler (baslik, icerik, tarih_saat)'
-                ' VALUES (?, ?, ?)',
-                (yeni_baslik.strip(), yeni_icerik_metin.strip(), zaman),
-            )
-            conn.commit()
-          st.success('Yenilik başarıyla sayfaya eklendi!')
-        except Exception as e:
-          st.error(f'Hata: {e}')
-      else:
-        st.error('Başlık ve içerik boş bırakılamaz!')
-
-    if st.button('Admin Oturumunu Kapat', use_container_width=True):
-      st.session_state.admin_giris = False
-      st.rerun()
-
-  st.divider()
-  st.markdown('### 🌐 Canlı Web Bilgi Çekici')
-  if st.button('🌐 İnternetten Oto Verisi Çek', use_container_width=True):
-    with st.spinner('İnternetten otomotiv verileri taranıyor...'):
-      basarili = otomobil_verisi_cek_ve_ekle()
-      if basarili:
-        st.success('Güncel veriler web üzerinden çekilip arşive eklendi!')
-      else:
-        st.error('Veri çekilirken bir hata oluştu veya ağ kısıtlandı.')
-
-  st.divider()
-  if st.button('Genel Oturumu Kapat', use_container_width=True):
-    st.session_state.logged_in = False
-    st.session_state.aktif_kullanici = 'Misafir'
-    st.session_state.admin_giris = False
-    try:
-      with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND"
-            " name='hatirlanan_oturum'"
-        )
-        if cursor.fetchone():
-          cursor.execute('DROP TABLE hatirlanan_oturum')
-          conn.commit()
-    except Exception:
-      pass
-    st.rerun()
-
-  st.caption('Auto Lab Pro © 2026')
-
-st.markdown(
-    """
-    <div class="hero-card">
-        <div class="hero-title">🚗 AUTO LAB PRO</div>
-        <div class="hero-subtitle">Mühendislik Odaklı Dinamik Araç & Arıza Analiz Merkezi</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-try:
-  with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-    cursor = conn.cursor()
-    cursor.execute(
-        'SELECT baslik, icerik, tarih_saat FROM admin_yenilikler ORDER BY id'
-        ' DESC LIMIT 3'
-    )
-    duyurular = cursor.fetchall()
-    if duyurular:
-      with st.expander(
-          '🚀 Admin Tarafından Eklenen Son Yenilikler ve Güncellemeler',
-          expanded=False,
-      ):
-        for d in duyurular:
-          st.markdown(f'### 📌 {d[0]}')
-          st.markdown(f'{d[1]}')
-          st.caption(f'Yayınlanma Zamanı: {d[2]}')
-          st.divider()
-except Exception:
-  pass
-
-sekme = st.selectbox(
-    'Auto Lab Ana Menü:',
-    [
-        '💬 Oto Uzman AI (Canlı Soru-Cevap Penceresi)',
-        '🚗 Garajım & Masraf Takip',
-        '📋 Soru Arşivi',
-        '⚙️ Şifremi Güncelle (Parola Değiştir)',
-        '🛡️ Admin Yönetim Paneli',
-    ],
-)
-
-if 'Oto Uzman AI' in sekme:
-  st.subheader('💬 Oto Uzman Yapay Zeka Asistanı (Canlı Soru Penceresi)')
-  st.markdown(
-      'Aklına takılan araç arızasını, **P0300 gibi OBD-II arıza kodlarını**'
-      ' yazabilir ya da yakıt hesabı yapabilirsin.'
-  )
-
-  if 'chat_gecmisi' not in st.session_state:
-    st.session_state.chat_gecmisi = []
-
-  for item in st.session_state.chat_gecmisi:
-    with st.chat_message('user'):
-      st.markdown(item['soru'])
-    with st.chat_message('assistant'):
-      st.markdown(item['cevap'])
-
-  kullanici_sorusu = st.chat_input(
-      'Sorunu yaz (Örn: P0300 arıza kodu nedir?, Turbodan ıslık geliyor)'
-  )
-
-  if kullanici_sorusu:
-    with st.chat_message('user'):
-      st.markdown(kullanici_sorusu)
-
-    uretilen_cevap = oto_uzman_cevapla(kullanici_sorusu)
-
-    with st.chat_message('assistant'):
-      st.markdown(uretilen_cevap)
-
-    try:
-      with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-        cursor = conn.cursor()
-        zaman = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute(
-            'INSERT INTO arac_sorulari (kullanici, soru, cevap, tarih_saat)'
-            ' VALUES (?, ?, ?, ?)',
-            (
-                st.session_state.aktif_kullanici,
-                kullanici_sorusu,
-                uretilen_cevap,
-                zaman,
-            ),
-        )
-        conn.commit()
-
-      discord_bildirim_gonder(
-          '🤖 Oto Uzman Canlı Soru Soruldu',
-          (
-              f'**Kullanıcı:**'
-              f' {st.session_state.aktif_kullanici}\n**Soru:**'
-              f' {kullanici_sorusu}'
-          ),
-      )
-    except Exception as e:
-      print(f'Log hatası: {e}')
-
-    st.session_state.chat_gecmisi.append(
-        {'soru': kullanici_sorusu, 'cevap': uretilen_cevap}
-    )
-
-elif 'Garajım & Masraf Takip' in sekme:
-  st.subheader('🚗 Kişisel Araç Garajı ve Masraf Takip Modülü')
-  st.markdown(
-      'Kendi aracını sisteme kaydedebilir, bakım harcamalarını ve yakıt'
-      ' masraflarını takip edebilirsin.'
-  )
-
-  g_tab1, g_tab2 = st.tabs([
-      '🚘 Araçlarım & Garaj Ekle / Sil',
-      '💰 Masraf / Bakım Ekle & Takip',
-  ])
-
-  with g_tab1:
-    st.markdown('### Yeni Araç Kaydet')
-    col1, col2 = st.columns(2)
-    with col1:
-      arac_marka_model = st.text_input(
-          'Araç Marka ve Modeli:', placeholder='Örn: Volkswagen Golf 1.6 TDI'
-      )
-      arac_plaka = st.text_input('Plaka:', placeholder='34ABC123')
-    with col2:
-      arac_km = st.number_input('Mevcut Kilometre:', min_value=0, value=50000)
-      arac_yakit = st.selectbox(
-          'Yakıt Türü:', ['Benzin', 'Dizel', 'LPG', 'Hibrit', 'Elektrik']
-      )
-
-    if st.button('Aracı Garajıma Kaydet', use_container_width=True):
-      if arac_marka_model.strip() and arac_plaka.strip():
-        try:
-          with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                'INSERT INTO kullanici_garaj (kullanici, arac_adi, plaka,'
-                ' kilometre, yakit_turu) VALUES (?, ?, ?, ?, ?)',
-                (
-                    st.session_state.aktif_kullanici,
-                    arac_marka_model,
-                    arac_plaka,
-                    arac_km,
-                    arac_yakit,
-                ),
-            )
-            conn.commit()
-          st.success('Aracınız başarıyla garaja eklendi!')
+          discorda_mesaj_gonder(
+              f"🔓 **AUTO-LAB Kilidi Açıldı!**\n• Kullanıcı:"
+              f" `{st.session_state.aktif_kullanici}` sistemi devam ettirdi."
+          )
+          st.success(
+              "Doğrulama başarılı! AUTO-LAB ana sistemine tekrar hoş geldin."
+          )
           st.rerun()
-        except Exception as e:
-          st.error(f'Hata: {e}')
-      else:
-        st.error('Lütfen marka model ve plaka giriniz!')
-
-    st.divider()
-    st.markdown('### 📋 Kayıtlı Araçlarım ve Araç Silme')
-    try:
-      with sqlite3.connect('autolab_pro.db') as conn:
-        df_garaj = pd.read_sql_query(
-            'SELECT id, arac_adi, plaka, kilometre, yakit_turu FROM'
-            ' kullanici_garaj WHERE kullanici = ?',
-            conn,
-            params=(st.session_state.aktif_kullanici,),
-        )
-        if not df_garaj.empty:
-          st.dataframe(df_garaj, use_container_width=True)
-
-          # ARAÇ SİLME ÖZELLİĞİ
-          st.markdown('#### 🗑️ Araç Sil')
-          silinecek_arac_secenek = {
-              f"{row['arac_adi']} ({row['plaka']})": row['id']
-              for _, row in df_garaj.iterrows()
-          }
-          secilen_arac_kutusu = st.selectbox(
-              'Silmek İstediğiniz Aracı Seçin:',
-              list(silinecek_arac_secenek.keys()),
+        else:
+          discorda_mesaj_gonder(
+              f"⚠️ **AUTO-LAB Hatalı Kilit Açma Denemesi!**\n• Kullanıcı:"
+              f" `{st.session_state.aktif_kullanici}`"
           )
+          st.error("Hatalı şifre! Laboratuvar kilidi açılamadı.")
 
-          if st.button(
-              'Seçilen Aracı ve İlişkili Masraflarını Sil',
-              type='primary',
-              use_container_width=True,
-          ):
-            silinecek_id = silinecek_arac_secenek[secilen_arac_kutusu]
-            silinecek_arac_adi = secilen_arac_kutusu.split(' (')[0]
+  else:
+    st.sidebar.title("📌 Menü")
+    menu_listesi = [
+        "🔍 Arama Motoru",
+        "Şifremi Güncelle (Parola Değiştir)",
+        "🛡️ Admin Sayfası",
+    ]
+
+    sekme = st.sidebar.radio("Gitmek İstediğiniz Bölüm:", menu_listesi)
+
+    if sekme == "🔍 Arama Motoru":
+      st.subheader("🔍 Sistem İçi Arama Motoru")
+      arama_terimi = st.text_input(
+          "Aranacak kelimeyi veya ifadeyi girin:",
+          placeholder="Örn: Honda, Sistem...",
+      )
+
+      if st.button("Ara", use_container_width=True):
+        if not arama_terimi.strip():
+          st.warning("Lütfen aramak için bir şeyler yazın.")
+        else:
+          if not st.session_state.is_admin:
+            st.session_state.islem_hakki -= 1
             try:
-              with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
+              with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
                 cursor = conn.cursor()
-                # Önce aracı garajdan siliyoruz
                 cursor.execute(
-                    'DELETE FROM kullanici_garaj WHERE id = ? AND kullanici = ?',
-                    (silinecek_id, st.session_state.aktif_kullanici),
-                )
-                # İsteğe bağlı: Bu araca ait masrafları da temizleyebiliriz
-                cursor.execute(
-                    'DELETE FROM arac_masraflar WHERE arac_adi = ? AND'
-                    ' kullanici = ?',
-                    (silinecek_arac_adi, st.session_state.aktif_kullanici),
+                    "UPDATE kullanicilar SET islem_hakki = islem_hakki - 1 WHERE"
+                    " kullanici_adi = ?",
+                    (st.session_state.aktif_kullanici,),
                 )
                 conn.commit()
-              st.success('Araç ve ilgili kayıtlar başarıyla silindi!')
-              st.rerun()
-            except Exception as e:
-              st.error(f'Silme sırasında hata oluştu: {e}')
+            except Exception:
+              pass
+
+          st.info(f'"{arama_terimi}" için arama yapıldı.')
+          arama_sorgusu = f"%{arama_terimi.strip()}%"
+          toplam_sonuc = 0
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              df_sonuc = pd.read_sql_query(
+                  "SELECT ad, soyad, eposta, kullanici_adi FROM kullanicilar"
+                  " WHERE ad LIKE ? OR soyad LIKE ? OR eposta LIKE ? OR"
+                  " kullanici_adi LIKE ?",
+                  conn,
+                  params=(
+                      arama_sorgusu,
+                      arama_sorgusu,
+                      arama_sorgusu,
+                      arama_sorgusu,
+                  ),
+              )
+              toplam_sonuc = len(df_sonuc)
+
+              st.markdown("### 📊 Arama Sonuçları")
+              if not df_sonuc.empty:
+                st.dataframe(df_sonuc, use_container_width=True)
+              else:
+                st.write("Eşleşen kayıt bulunamadı.")
+
+              cursor = conn.cursor()
+              cursor.execute(
+                  """
+                        INSERT INTO arama_gecmisi (kullanici, aranan_kelime, bulunan_sonuc_sayisi)
+                        VALUES (?, ?, ?)
+                    """,
+                  (
+                      st.session_state.aktif_kullanici,
+                      arama_terimi.strip(),
+                      toplam_sonuc,
+                  ),
+              )
+              conn.commit()
+          except Exception as e:
+            st.error(f"Arama hatası: {e}")
+
+          if not st.session_state.is_admin and st.session_state.islem_hakki <= 0:
+            st.rerun()
+
+    elif sekme == "Şifremi Güncelle (Parola Değiştir)":
+      st.subheader("⚙ Hesap Şifresini Güncelle")
+      eski_sifre = st.text_input("Mevcut Şifreniz:", type="password")
+      yeni_sifre_1 = st.text_input("Yeni Şifreniz:", type="password")
+      yeni_sifre_2 = st.text_input("Yeni Şifreniz (Tekrar):", type="password")
+
+      if st.button("Şifreyi Güncelle", use_container_width=True):
+        if not eski_sifre or not yeni_sifre_1 or not yeni_sifre_2:
+          st.error("Tüm alanları doldurun!")
+        elif yeni_sifre_1 != yeni_sifre_2:
+          st.error("Şifreler uyuşmuyor!")
         else:
-          st.info('Henüz kayıtlı bir aracınız yok.')
-    except Exception as e:
-      st.error(f'Hata: {e}')
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "SELECT sifre FROM kullanicilar WHERE kullanici_adi = ?",
+                  (st.session_state.aktif_kullanici,),
+              )
+              row = cursor.fetchone()
+              if row and row[0] == sifre_hashle(eski_sifre):
+                yeni_hashli_sifre = sifre_hashle(yeni_sifre_1)
+                cursor.execute(
+                    "UPDATE kullanicilar SET sifre = ? WHERE kullanici_adi ="
+                    " ?",
+                    (yeni_hashli_sifre, st.session_state.aktif_kullanici),
+                )
+                conn.commit()
 
-  with g_tab2:
-    st.markdown('### Masraf veya Bakım Ekle & Takip')
-    try:
-      with sqlite3.connect('autolab_pro.db') as conn:
-        df_araclarim = pd.read_sql_query(
-            'SELECT id, arac_adi FROM kullanici_garaj WHERE kullanici = ?',
-            conn,
-            params=(st.session_state.aktif_kullanici,),
-        )
-    except Exception:
-      df_araclarim = pd.DataFrame()
-
-    if not df_araclarim.empty:
-      secilen_arac_masraf = st.selectbox(
-          'Araç Seç:',
-          df_araclarim['arac_adi'].tolist(),
-          key='masraf_arac_secim',
-      )
-      m_turu = st.selectbox(
-          'Masraf Türü:', [
-              'Periyodik Bakım',
-              'Yakıt Dolumu',
-              'Lastik Değişimi',
-              'Fren Balatası',
-              'Sigorta / Vergi',
-              'Diğer Arıza',
-          ]
-      )
-      m_tutar = st.number_input('Tutar (TL):', min_value=0.0, value=1000.0)
-      m_aciklama = st.text_input(
-          'Açıklama / Detay:', placeholder='Örn: 10 bin bakımı yapıldı.'
-      )
-
-      if st.button('Masrafı Kaydet', use_container_width=True):
-        try:
-          with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-            cursor = conn.cursor()
-            zaman_str = datetime.now().strftime('%Y-%m-%d')
-            cursor.execute(
-                'INSERT INTO arac_masraflar (kullanici, arac_adi, masraf_turu,'
-                ' tutar, aciklama, tarih) VALUES (?, ?, ?, ?, ?, ?)',
-                (
-                    st.session_state.aktif_kullanici,
-                    secilen_arac_masraf,
-                    m_turu,
-                    m_tutar,
-                    m_aciklama,
-                    zaman_str,
-                ),
-            )
-            conn.commit()
-          st.success('Masraf başarıyla eklendi!')
-          st.rerun()
-        except Exception as e:
-          st.error(f'Hata: {e}')
-
-      st.divider()
-      st.markdown('### 📊 Kayıtlı Masraflar ve Giderler')
-      try:
-        with sqlite3.connect('autolab_pro.db') as conn:
-          df_masraflar = pd.read_sql_query(
-              'SELECT id, arac_adi, masraf_turu, tutar, aciklama, tarih FROM'
-              ' arac_masraflar WHERE kullanici = ? ORDER BY id DESC',
-              conn,
-              params=(st.session_state.aktif_kullanici,),
-          )
-          if not df_masraflar.empty:
-            st.dataframe(df_masraflar, use_container_width=True)
-
-            # MASRAF SİLME ÖZELLİĞİ
-            st.markdown('#### 🗑️ Masraf Kaydı Sil')
-            silinecek_masraf_dict = {
-                f"ID {row['id']} - {row['arac_adi']} | {row['masraf_turu']} ("
-                f"{row['tutar']} TL)": row['id']
-                for _, row in df_masraflar.iterrows()
-            }
-            secilen_masraf_kutusu = st.selectbox(
-                'Silmek İstediğiniz Masrafı Seçin:',
-                list(silinecek_masraf_dict.keys()),
-            )
-
-            if st.button(
-                'Seçilen Masrafı Sil',
-                type='secondary',
-                use_container_width=True,
-            ):
-              sil_masraf_id = silinecek_masraf_dict[secilen_masraf_kutusu]
-              try:
-                with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-                  cursor = conn.cursor()
+                if not st.session_state.is_admin:
+                  st.session_state.islem_hakki -= 1
                   cursor.execute(
-                      'DELETE FROM arac_masraflar WHERE id = ? AND kullanici'
-                      ' = ?',
-                      (sil_masraf_id, st.session_state.aktif_kullanici),
+                      "UPDATE kullanicilar SET islem_hakki = islem_hakki - 1 WHERE"
+                      " kullanici_adi = ?",
+                      (st.session_state.aktif_kullanici,),
                   )
                   conn.commit()
-                st.success('Masraf kaydı başarıyla silindi!')
-                st.rerun()
-              except Exception as e:
-                st.error(f'Masraf silinirken hata oluştu: {e}')
-          else:
-            st.info('Henüz kayıtlı bir masraf bulunmuyor.')
-      except Exception as e:
-        st.error(f'Hata: {e}')
-    else:
-      st.warning(
-          'Lütfen önce "🚘 Araçlarım & Garaj Ekle / Sil" sekmesinden bir araç'
-          ' kaydedin.'
-      )
 
-elif 'Soru Arşivi' in sekme:
-  st.subheader('📋 Geçmiş Arıza Soru ve Çözüm Arşivi')
-  try:
-    with sqlite3.connect('autolab_pro.db') as conn:
-      df_arsiv = pd.read_sql_query(
-          'SELECT id, kullanici, soru, cevap, tarih_saat FROM arac_sorulari'
-          ' ORDER BY id DESC',
-          conn,
-      )
-      if not df_arsiv.empty:
-        st.dataframe(df_arsiv, use_container_width=True)
+                giris_kaydi_ekle(
+                    st.session_state.aktif_kullanici, "Şifresini Güncelledi"
+                )
+                st.success("Şifreniz güncellendi!")
+              else:
+                st.error("Mevcut şifre hatalı!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+    elif sekme == "🛡️ Admin Sayfası":
+      if not st.session_state.is_admin:
+        st.warning(
+            "⚠️ Bu alana sadece ADMIN yetkisi olan hesaplar erişebilir."
+        )
+        admin_giris_kodu = st.text_input(
+            "Admin yetki kodu / şifresi:", type="password"
+        )
+        if st.button("Admin Olmaya Çalış", use_container_width=True):
+          if admin_giris_kodu.strip() in ["ADMİN", "ADMIN"]:
+            st.session_state.is_admin = True
+            st.session_state.aktif_kullanici = "ADMIN"
+            st.session_state.islem_hakki = 999999
+            st.success("Admin yetkisi başarıyla alındı!")
+            st.rerun()
+          else:
+            st.error("Geçersiz admin şifresi!")
       else:
-        st.info('Arşivde henüz soru bulunmuyor.')
-  except Exception as e:
-    st.error(f'Hata: {e}')
+        st.subheader("🛡️ Gelişmiş Admin Yönetim Paneli")
+        if st.button("Admin Yetkisini Kapat", use_container_width=True):
+          st.session_state.is_admin = False
+          st.session_state.islem_hakki = 20
+          st.rerun()
 
-elif 'Şifremi Güncelle (Parola Değiştir)' in sekme:
-  st.subheader('⚙️ Hesap Şifresini Güncelle')
-  eski_sifre = st.text_input('Mevcut Şifreniz:', type='password')
-  yeni_sifre_1 = st.text_input('Yeni Şifreniz:', type='password')
-  yeni_sifre_2 = st.text_input('Yeni Şifreniz (Tekrar):', type='password')
-
-  if st.button('Şifreyi Güncelle', type='primary', use_container_width=True):
-    if not eski_sifre or not yeni_sifre_1 or not yeni_sifre_2:
-      st.error('Lütfen tüm alanları doldurun!')
-    elif yeni_sifre_1 != yeni_sifre_2:
-      st.error('Yeni şifreler birbiriyle uyuşmuyor!')
-    else:
-      try:
-        with sqlite3.connect('autolab_pro.db', timeout=10) as conn:
-          cursor = conn.cursor()
-          cursor.execute(
-              'SELECT sifre FROM kullanicilar WHERE kullanici_adi = ?',
-              (st.session_state.aktif_kullanici,),
-          )
-          row = cursor.fetchone()
-          if row and row[0] == eski_sifre:
-            cursor.execute(
-                'UPDATE kullanicilar SET sifre = ? WHERE kullanici_adi = ?',
-                (yeni_sifre_1, st.session_state.aktif_kullanici),
-            )
-            conn.commit()
-            st.success('Şifreniz başarıyla güncellendi!')
-          else:
-            st.error('Mevcut şifreniz hatalı!')
-      except Exception as e:
-        st.error(f'Hata: {e}')
-
-elif '🛡️ Admin Yönetim Paneli' in sekme:
-  st.subheader('🛡️ Yönetim Paneli ve Veritabanı Kayıtları')
-  if not st.session_state.admin_giris:
-    st.warning(
-        'Bu paneli görebilmek için sol menüden admin şifresiyle giriş yapmanız'
-        ' gerekmektedir.'
-    )
-  else:
-    st.success('Admin yetkileri aktif. Tüm sistem verileri aşağıdadır:')
-    try:
-      with sqlite3.connect('autolab_pro.db') as conn:
-        st.markdown('### 👥 Kayıtlı Kullanıcılar')
-        df_kll = pd.read_sql_query(
-            'SELECT id, ad_soyad, eposta, kullanici_adi, kayit_tarihi FROM'
-            ' kullanicilar',
-            conn,
+        tab_yonetim1, tab_yonetim2, tab_yonetim3 = st.tabs(
+            ["👥 Kullanıcı Yönetimi & CSV", "📢 Duyurular", "🕒 Log Kayıtları"]
         )
-        st.dataframe(df_kll, use_container_width=True)
 
-        st.markdown('### 🚗 Tüm Garaj Kayıtları')
-        df_all_garaj = pd.read_sql_query(
-            'SELECT * FROM kullanici_garaj', conn
-        )
-        st.dataframe(df_all_garaj, use_container_width=True)
-    except Exception as e:
-      st.error(f'Veriler çekilirken hata oluştu: {e}')
+        with tab_yonetim1:
+          st.markdown("### 👥 Kayıtlı Kullanıcılar & İşlem Hakkı Yönetimi")
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              df_kullanicilar = pd.read_sql_query(
+                  "SELECT id, ad, soyad, eposta, kullanici_adi, is_banned,"
+                  " islem_hakki, kayit_tarihi FROM kullanicilar",
+                  conn,
+              )
+              if not df_kullanicilar.empty:
+                st.dataframe(df_kullanicilar, use_container_width=True)
+
+                csv_buffer = io.StringIO()
+                df_kullanicilar.to_csv(csv_buffer, index=False)
+                st.download_button(
+                    label="📥 Kullanıcı Listesini CSV Olarak İndir",
+                    data=csv_buffer.getvalue(),
+                    file_name="kullanici_listesi.csv",
+                    mime="text/csv",
+                )
+
+                st.markdown("---")
+                secilen_kadi = st.selectbox(
+                    "İşlem Yapılacak Kullanıcı:",
+                    df_kullanicilar["kullanici_adi"].tolist(),
+                )
+
+                st.markdown("#### ⚡ Kullanıcıya İşlem Hakkı Ver")
+                eklenecek_hak = st.number_input(
+                    "Eklenecek İşlem Hakkı Miktarı:",
+                    min_value=1,
+                    value=20,
+                    step=1,
+                )
+                if st.button(
+                    "Seçilen Kullanıcıya Hak Ver", use_container_width=True
+                ):
+                  cursor = conn.cursor()
+                  cursor.execute(
+                      "UPDATE kullanicilar SET islem_hakki = islem_hakki + ?"
+                      " WHERE kullanici_adi = ?",
+                      (eklenecek_hak, secilen_kadi),
+                  )
+                  conn.commit()
+                  st.toast(
+                      f"✅ '{secilen_kadi}' adlı kullanıcıya {eklenecek_hak} işlem"
+                      " hakkı eklendi!",
+                      icon="🚀",
+                  )
+                  st.rerun()
+
+                st.markdown("---")
+                col_b1, col_b2 = st.columns(2)
+                with col_b1:
+                  if st.button(
+                      "🔒 Seçilen Kullanıcıyı Banla / Aktif Yap",
+                      use_container_width=True,
+                  ):
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "SELECT is_banned FROM kullanicilar WHERE"
+                        " kullanici_adi = ?",
+                        (secilen_kadi,),
+                    )
+                    durum = cursor.fetchone()[0]
+                    yeni_durum = 0 if durum == 1 else 1
+                    cursor.execute(
+                        "UPDATE kullanicilar SET is_banned = ? WHERE"
+                        " kullanici_adi = ?",
+                        (yeni_durum, secilen_kadi),
+                    )
+                    conn.commit()
+                    st.toast(
+                        f"🔒 '{secilen_kadi}' kullanıcısının ban durumu"
+                        " değiştirildi!",
+                        icon="⚠️",
+                    )
+                    st.rerun()
+
+                with col_b2:
+                  if (
+                      st.button(
+                          "🗑️ Seçilen Kullanıcıyı Sil",
+                          type="primary",
+                          use_container_width=True,
+                      )
+                      and secilen_kadi != "ADMIN"
+                  ):
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "DELETE FROM kullanicilar WHERE kullanici_adi = ?",
+                        (secilen_kadi,),
+                    )
+                    conn.commit()
+                    st.toast(
+                        f"🗑️ '{secilen_kadi}' adlı kullanıcı silindi!",
+                        icon="❌",
+                    )
+                    st.rerun()
+              else:
+                st.info("Kayıtlı başka kullanıcı yok.")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+        with tab_yonetim2:
+          st.markdown("### 📢 Tüm Kullanıcılara Duyuru Gönder")
+          yeni_duyuru_metni = st.text_input("Duyuru Mesajı:")
+          if st.button("Duyuruyu Yayınla", use_container_width=True):
+            if yeni_duyuru_metni.strip():
+              try:
+                with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+                  cursor = conn.cursor()
+                  cursor.execute(
+                      "INSERT INTO announcements (message) VALUES (?)",
+                      (yeni_duyuru_metni.strip(),),
+                  )
+                  conn.commit()
+                  st.success(
+                      "Duyuru başarıyla yayınlandı! Kullanıcı ekranına kayarak"
+                      " düşecektir."
+                  )
+              except Exception as e:
+                st.error(f"Hata: {e}")
+            else:
+              st.warning("Lütfen bir duyuru metni yazın.")
+
+        with tab_yonetim3:
+          st.markdown("### 🕒 Sistem Giriş ve İşlem Logları")
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              df_loglar = pd.read_sql_query(
+                  "SELECT id, kullanici_adi, islem_tipi, tarih FROM"
+                  " giris_loglari ORDER BY id DESC",
+                  conn,
+              )
+              if not df_loglar.empty:
+                st.dataframe(df_loglar, use_container_width=True)
+
+                log_buffer = io.StringIO()
+                df_loglar.to_csv(log_buffer, index=False)
+                st.download_button(
+                    label="📥 Logları CSV Olarak İndir",
+                    data=log_buffer.getvalue(),
+                    file_name="sistem_loglari.csv",
+                    mime="text/csv",
+                )
+              else:
+                st.info("Henüz log kaydı bulunmuyor.")
+          except Exception as e:
+            st.error(f"Hata: {e}")
