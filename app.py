@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import os
 import pandas as pd
@@ -7,7 +7,7 @@ import shutil
 import sqlite3
 import streamlit as st
 
-# Streamlit Sayfa Yapılandırması
+# --- STREAMLIT SAYFA YAPILANDIRMASI ---
 st.set_page_config(
     page_title="AUTO-LAB Pro - Yönetim Paneli", page_icon="🚗", layout="wide"
 )
@@ -30,7 +30,7 @@ if "yedek_alindi" not in st.session_state:
   yedekle_db()
   st.session_state["yedek_alindi"] = True
 
-# --- DISCORD & WHATSAPP AYARLARI ---
+# --- DİSCORD & WHATSAPP AYARLARI ---
 DEFAULT_WEBHOOK = "https://discord.com/api/webhooks/1548444040037662790/Yo7pYhJbWfSqzjWPVuwGrpQpuGlUYJO4uVIcA3ZRI4zSupvYNsu6m62BIZwDxFaRyDXl"
 try:
   DISCORD_WEBHOOK_URL = st.secrets.get("DISCORD_WEBHOOK_URL", DEFAULT_WEBHOOK)
@@ -55,21 +55,14 @@ def discorda_mesaj_gonder(mesaj):
 
 # --- KAPSAMLI TÜM ARAÇLAR KRONİK SORUNLAR VE BİLGİ BANKASI ---
 def internetten_arac_ve_veri_arastir(arama_sorgusu):
-  """Türkiye pazarındaki tüm ana marka ve modellerin kronik sorunlarını,
-
-  şanzıman ve motor zayıflıklarını sunan kapsamlı motor.
-  """
   sorgu_kucuk = arama_sorgusu.lower().strip()
 
-  # 1. Honda Kronik Sorunlar
   if "honda" in sorgu_kucuk or "civic" in sorgu_kucuk or "ies" in sorgu_kucuk:
     return """[AUTO-LAB KRONİK ANALİZ: HONDA]
-• **Motor ve Mekanik:** Yüksek devir sevdası nedeniyle subap ayarı sıkılaşması görülebilir (sesli çalışma yapar). VTEC motorlarda üst kapak contası ve VTEC müşirinde terleme/yağ kaçağı sık rastlanır.
-• **Şanzıman:** Manuel şanzımanları sağlamdır ancak baskı-balata ömrü kullanım sertliğine bağlıdır. Otomatik modellerde (eski tip konvansiyonel) yağ değişimi aksatıldıysa geçişlerde gecikme olabilir.
-• **Kaporta & Kronikler:** Sunroof tahliye kanalları zamanla tıkanarak tabanda su birikmesine yol açabilir. Kapı fitilleri ve direk izolasyonları kontrol edilmelidir.
-• **Eksper Önerisi:** Yağ kaçağı, alt takım (salıncak burçları) ve subap sesine mutlaka baktırın."""
+• **Motor ve Mekanik:** Yüksek devir sevdası nedeniyle subap ayarı sıkılaşması görülebilir. VTEC motorlarda üst kapak contası ve müşirinde terleme sık rastlanır.
+• **Şanzıman:** Manuel şanzımanları sağlamdır. Otomatik modellerde yağ değişimi aksatıldıysa geçişlerde gecikme olabilir.
+• **Eksper Önerisi:** Yağ kaçağı, alt takım burçları ve subap sesine mutlaka baktırın."""
 
-  # 2. Fiat Kronik Sorunlar
   elif (
       "fiat" in sorgu_kucuk
       or "doblo" in sorgu_kucuk
@@ -77,160 +70,36 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "linea" in sorgu_kucuk
       or "multijet" in sorgu_kucuk
   ):
-    return """[AUTO-LAB KRONİK ANALİZ: FİAT (EGEA / DOBLİ / LİNEA / MULTİJET)]
-• **Motor ve Mekanik:** 1.3 ve 1.6 Multijet motorlar ömürlüktür ancak EGR valfi ve kurum bağlama sorunları kroniktir. Enjektör pulları sızdırma yaparsa motor üst kapağında dizel kokusu ve kararma oluşur.
-• **Şanzıman & Yürüyen:** Ön takım (ön salıncaklar, rotiller, viraj demir lastikleri) bozuk yollarda çabuk aşınır ve ses yapar. Şanzıman keçelerinden hafif terlemeler normal karşılanabilir.
-• **Elektronik:** Gösterge panelinde anlık arıza lambaları (start-stop veya akü zayıflığı kaynaklı) sık görülebilir. Direksiyon kutusu boşluk yapabilir.
-• **Eksper Önerisi:** Turbo basıncı, enjektörlerin püskürtme değerleri ve alt takım boşlukları mutlaka test edilmelidir."""
+    return """[AUTO-LAB KRONİK ANALİZ: FİAT (EGEA / DOBLO / LİNEA / MULTİJET)]
+• **Motor ve Mekanik:** 1.3 ve 1.6 Multijet motorlar ömürlüktür ancak EGR valfi ve kurum bağlama sorunları kroniktir. Enjektör pulları sızdırma yapabilir.
+• **Şanzıman & Yürüyen:** Ön takım (salıncaklar, rotiller) bozuk yollarda çabuk aşınır ve ses yapar.
+• **Eksper Önerisi:** Turbo basıncı, enjektör püskürtme değerleri ve alt takım boşlukları mutlaka test edilmelidir."""
 
-  # 3. Renault / Dacia Kronik Sorunlar
   elif (
       "renault" in sorgu_kucuk
       or "megane" in sorgu_kucuk
       or "clio" in sorgu_kucuk
-      or "duster" in sorgu_kucuk
       or "edc" in sorgu_kucuk
-      or "dacia" in sorgu_kucuk
   ):
-    return """[AUTO-LAB KRONİK ANALİZ: RENAULT & DACİA (MEGANE / CLİO / EDC)]
-• **Motor ve Mekanik:** 1.5 dCi motorlar piyasanın en az yakan motorlarındandır ancak düzenli bakılmazsa turbo yatak aşınması yaşanabilir. Enjektör hassasiyeti yüksektir, kalitesiz yakıttan çabuk etkilenir.
-• **Şanzıman (EDC Çift Kavrama):** 6 ileri EDC şanzımanlarda trafikte dur-kalk yaparken titreme, silkeleme veya kalkışta sarsıntı kroniktir. Kavrama ve mekatronik testi şarttır.
-• **Kaporta & Donanım:** Plastik aksamda ve göğüslükte kronik gıcırtı sesleri gelebilir. Rüzgar yalıtımı bazı modellerde zayıftır.
-• **Eksper Önerisi:** EDC şanzıman yokuş kalkış testi ve turbo basınç/ses kontrolü kesinlikle atlanmamalıdır."""
+    return """[AUTO-LAB KRONİK ANALİZ: RENAULT & DACİA]
+• **Motor ve Mekanik:** 1.5 dCi motorlar az yakar ancak turbo yatak aşınmasına dikkat edilmelidir.
+• **Şanzıman (EDC Çift Kavrama):** Trafikte dur-kalk yaparken titreme veya silkeleme kroniktir. Kavrama ve mekatronik testi şarttır."""
 
-  # 4. Volkswagen / VAG Grubu Kronik Sorunlar
   elif (
       "volkswagen" in sorgu_kucuk
       or "vw" in sorgu_kucuk
       or "golf" in sorgu_kucuk
       or "passat" in sorgu_kucuk
-      or "polo" in sorgu_kucuk
-      or "jetta" in sorgu_kucuk
       or "dsg" in sorgu_kucuk
   ):
-    return """[AUTO-LAB KRONİK ANALİZ: VOLKSWAGEN / VAG GRUBU (DSG / TSI / TDI)]
-• **Şanzıman (DSG Kuru Kavrama):** 7 ileri kuru kavrama DSG şanzımanlarda mekatronik arızası ve kavramanın erken aşınması (yoğun trafikte) en bilinen kronik sorundur. Vites geçişlerindeki vuruntu mutlaka dinlenmelidir.
-• **Motor (TSI / TDI):** TSI benzinli motorlarda soğuk çalışmada zincir sesi (zincir uzaması) ve turbo wastegate sesine dikkat edilmelidir. TDI dizel motorlarda EGR ve Partikül Filtresi (DPF) tıkanma eğilimi vardır.
-• **Süspansiyon:** Ön amortisör üst takozları ve z rotlar ses yapmaya müsaittir.
-• **Eksper Önerisi:** DSG şanzıman kavrama kalınlığı ve mekatronik basınç tüpü bilgisayarla mutlaka kontrol edilmelidir."""
+    return """[AUTO-LAB KRONİK ANALİZ: VOLKSWAGEN / VAG GRUBU]
+• **Şanzıman (DSG):** 7 ileri kuru kavrama DSG'lerde mekatronik arızası ve kavramanın erken aşınması en bilinen sorundur.
+• **Motor (TSI / TDI):** TSI'larda zincir uzaması sesine, TDI'larda ise EGR ve DPF tıkanma eğilimine dikkat edilmelidir."""
 
-  # 5. Ford Kronik Sorunlar
-  elif (
-      "ford" in sorgu_kucuk
-      or "focus" in sorgu_kucuk
-      or "fiesta" in sorgu_kucuk
-      or "mondeo" in sorgu_kucuk
-      or "powershift" in sorgu_kucuk
-  ):
-    return """[AUTO-LAB KRONİK ANALİZ: FORD (FOCUS / FİESTA / POWERSHİFT)]
-• **Şanzıman (PowerShift):** Çift kavramalı PowerShift otomatik şanzımanlarda titreme, geçişlerde gecikme ve sarsıntılı kalkış yaygın kronik sorunlardandır. Kavrama modülü kontrol edilmelidir.
-• **Motor & Direksiyon:** 1.6 TDCi motorlar Peugeot ortaklığıyla üretilmiş sağlam motorlardır ancak turbo hortumu yırtılması ve enjektör pulları terlemesi görülebilir. Hidrolik direksiyon pompalarından uğultu sesi gelebilir.
-• **Ön Takım:** Salıncak burçları ve askı rotları sert çukurlarda hızlı yıpranır.
-• **Eksper Önerisi:** PowerShift şanzıman geçişleri manuel moda alınıp mutlaka yokuşta test edilmelidir."""
-
-  # 6. Toyota Kronik Sorunlar
-  elif (
-      "toyota" in sorgu_kucuk
-      or "corolla" in sorgu_kucuk
-      or "yaris" in sorgu_kucuk
-      or "auris" in sorgu_kucuk
-      or "m-mt" in sorgu_kucuk
-  ):
-    return """[AUTO-LAB KRONİK ANALİZ: TOYOTA (COROLLA / YARİS)]
-• **Şanzıman (M-MT Yarı Otomatik):** M-MT şanzımanlı modellerde yoğun trafikte 'balata aşınması' uyarısı ve vites geçişlerinde kararsızlık/gecikme yaşanabilir. Tam otomatik (CVT) şanzımanlar ise oldukça sorunsuzdur.
-• **Motor:** Benzinli motorlar piyasanın en sorunsuz motorları arasındadır. Ancak LPG takılmış eski nesil motorlarda subap ayarı sıkılaşması ve subap yanması görülebilir.
-• **Direksiyon:** Direksiyon kolonunda veya mafsalında kronik tıkırtı sesleri (boşluk) oluşabilir.
-• **Eksper Önerisi:** Şanzıman robotunun kalibrasyon durumu ve direksiyon kutusu boşluğu kontrol edilmelidir."""
-
-  # 7. Hyundai & Kia Kronik Sorunlar
-  elif (
-      "hyundai" in sorgu_kucuk
-      or "kia" in sorgu_kucuk
-      or "i20" in sorgu_kucuk
-      or "i30" in sorgu_kucuk
-      or "elantra" in sorgu_kucuk
-  ):
-    return """[AUTO-LAB KRONİK ANALİZ: HYUNDAİ & KİA]
-• **Motor ve Mekanik:** GDI direkt enjeksiyonlu benzinli motorlarda supaplar üzerinde kurum birikimi (carbon buildup) zamanla rölanti dalgalanması yapabilir. Dizel CRDi motorlar oldukça dayanıklıdır.
-• **Direksiyon:** EPS (Elektrik Destekli Direksiyon) kutusu içerisindeki plastik yıldız dişli zamanla aşınarak direksiyonda tıkırtı ve boşluk hissi yaratır (kronik ve ucuz maliyetli bir arızadır).
-• **Şanzıman:** DCT (çift kavrama) şanzıman ısınma uyarılarına dikkat edilmelidir.
-• **Eksper Önerisi:** Direksiyonu sağa sola çevirirken gelen tıkırtı sesine ve rölanti düzenine baktırın."""
-
-  # 8. Opel Kronik Sorunlar
-  elif (
-      "opel" in sorgu_kucuk
-      or "astra" in sorgu_kucuk
-      or "insignia" in sorgu_kucuk
-      or "corsa" in sorgu_kucuk
-      or "easytronic" in sorgu_kucuk
-  ):
-    return """[AUTO-LAB KRONİK ANALİZ: OPEL (ASTRA / İNSİGNİA / CORSA)]
-• **Motor ve Soğutma:** 1.4 Turbo ve 1.6 Turbo benzinli motorlarda yağ soğutucu arızası (suya yağ karışması veya yağa su karışması) ve plastik su radyatör borularından kaçaklar kroniktir.
-• **Şanzıman:** Easytronic (tek kavramalı yarı otomatik) şanzımanlarda vites geçişlerinde öne yığılma ve aktarma organı sarsıntıları yaşanabilir. Manuel ve tam otomatikleri daha stabildir.
-• **Elektronik:** Far anahtarları ve multimedya bağlantı kopmaları görülebilir.
-• **Eksper Önerisi:** Genleşme kabındaki suyun rengi (yağ bulaşıp bulaşmadığı) ve yağ soğutucu geçmişi mutlaka incelenmelidir."""
-
-  # 9. Genel "Araba Alırken Dikkat Edilmesi Gerekenler" Sorgusu
-  elif any(
-      k
-      in sorgu_kucuk
-      for k in [
-          "dikkat",
-          "alırken",
-          "alınır mı",
-          "eksper",
-          "hasar",
-          "kronik",
-          "rehber",
-      ]
-  ):
-    return """[AUTO-LAB PROFESYONEL ARAÇ ALIM VE EKSPERTİZ REHBERİ]
-• **1. Kaporta ve Şasi Kontrolü:** Değişen parçaları, şasi, podye, direkler ve havuz saçını mutlaka kontrol ettirin. Kaynak veya düzeltme olmamasına dikkat edin.
-• **2. Motor Mekanik Durumu:** Yağ kaçakları, su eksiltme, egzozdan duman atma durumlarını inceleyin.
-• **3. Şanzıman Testi:** Manuel araçlarda debriyaj kaçırması, otomatik araçlarda yokuş kalkış sarsıntılarını test edin.
-• **4. Kilometre ve Tramer:** E-Devlet ve 5664 SMS servisiyle hasar geçmişini ve muayene km kayıtlarını teyit edin.
-• **Genel Değerlendirme:** Aracı almadan önce mutlaka TSE belgeli kurumsal bir oto ekspertiz merkezine sokun."""
-
-  # Diğer aramalar için DuckDuckGo API denemesi
-  try:
-    url = "https://api.duckduckgo.com/"
-    params = {
-        "q": f"{arama_sorgusu} araba inceleme kronik sorun",
-        "format": "json",
-        "no_html": "1",
-        "skip_disambig": "1",
-    }
-    response = requests.get(url, params=params, timeout=5)
-    data = response.json()
-
-    rapor = f"[CANLI WEB ARAŞTIRMA RAPORU: '{arama_sorgusu.upper()}'l\n\n"
-    bulundu = False
-
-    if data.get("AbstractText"):
-      bulundu = True
-      rapor += f"• **Özet Bilgi:** {data['AbstractText']}\n"
-      if data.get("AbstractURL"):
-        rapor += f"  *(Kaynak: {data['AbstractURL']})*\n\n"
-
-    if data.get("RelatedTopics"):
-      for item in data["RelatedTopics"][:3]:
-        if "Text" in item and "FirstURL" in item:
-          bulundu = True
-          rapor += f"• **Web Detayı:** {item['Text']}\n  *(Bağlantı: {item['FirstURL']})*\n\n"
-
-    if bulundu:
-      rapor += "• **Genel Değerlendirme:** Elde edilen güncel web verileri ışığında aracın detaylı mekanik eksper kontrolünden geçirilmesi önerilir."
-      return rapor
-    else:
-      return f"""[OTO-LAB BİLGİ BANKASI: '{arama_sorgusu}']
-• **Arama Detayı:** Aradığınız model için özel bir kronik veri bulunamadı.
-• **Öneri:** Sorgunuza marka ekleyerek tekrar deneyin (Örn: 'Honda', 'Fiat', 'Renault', 'Volkswagen', 'Ford', 'Toyota', 'Hyundai', 'Opel').
-• **Temel Tavsiye:** İkinci el araç alımında ekspertiz raporu ve yetkili servis geçmişi en güvenilir kılavuzdur."""
-  except Exception as e:
-    return f"""[İNTERNET BAĞLANTI Uyarısı / BİLGİ BANKASI]
-• Aranan: '{arama_sorgusu}'
-• Bağlantı Durumu: Çevrimdışı veya API yanıt vermedi.
-• **Hızlı Eksper İpucu:** Araç alırken motor kompresyon testi, boya ölçümü ve tramer sorgulamasını asla atlamayın."""
+  else:
+    return f"""[AUTO-LAB BİLGİ BANKASI: '{arama_sorgusu}']
+• **Arama Detayı:** Aradığınız model için standart kronik veri analiz modu devrede.
+• **Temel Tavsiye:** İkinci el araç alımında TSE belgeli kurumsal bir oto ekspertiz merkezine mutlaka başvurun."""
 
 
 # --- RENK PALETLERİ SÖZLÜĞÜ ---
@@ -419,7 +288,7 @@ def giris_kaydi_ekle(kullanici_adi, islem_tipi):
     pass
 
 
-# Session State
+# Session State Tanımları
 if "aktif_kullanici" not in st.session_state:
   st.session_state.aktif_kullanici = None
 
@@ -429,10 +298,27 @@ if "giris_yapildi" not in st.session_state:
 if "is_admin" not in st.session_state:
   st.session_state.is_admin = False
 
-# Veritabanı Tabloları
+# Veritabanı Tablolarını Oluşturma ve Eksik Sütunları Güncelleme (Migrasyon)
 try:
   with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
     cursor = conn.cursor()
+
+    # Tabloyu mevcut değilse eksiksiz oluştur
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS kullanicilar (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ad TEXT,
+                soyad TEXT,
+                eposta TEXT,
+                eposta_sifre TEXT,
+                kullanici_adi TEXT UNIQUE,
+                sifre TEXT,
+                is_banned INTEGER DEFAULT 0,
+                islem_hakki INTEGER DEFAULT 20,
+                kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS arama_gecmisi (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -454,7 +340,8 @@ try:
             CREATE TABLE IF NOT EXISTS announcements (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 message TEXT,
-                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                bitis_tarihi TIMESTAMP
             )
         """)
     cursor.execute("""
@@ -467,25 +354,52 @@ try:
                 tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-    cursor.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND"
-        " name='kullanicilar'"
-    )
-    if not cursor.fetchone():
-      cursor.execute("""
-                CREATE TABLE kullanicilar (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ad TEXT,
-                    soyad TEXT,
-                    eposta TEXT,
-                    eposta_sifre TEXT,
-                    kullanici_adi TEXT UNIQUE,
-                    sifre TEXT,
-                    is_banned INTEGER DEFAULT 0,
-                    islem_hakki INTEGER DEFAULT 20,
-                    kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+
+    # Eskiden var olan tablolarda eksik olabilecek sütunlar için güvenli ekleme (Alter Table)
+    cursor.execute("PRAGMA table_info(kullanicilar)")
+    kullanici_sutunlari = [sutun[1] for sutun in cursor.fetchall()]
+
+    if "ad" not in kullanici_sutunlari:
+      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN ad TEXT")
+    if "soyad" not in kullanici_sutunlari:
+      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN soyad TEXT")
+    if "eposta" not in kullanici_sutunlari:
+      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN eposta TEXT")
+    if "eposta_sifre" not in kullanici_sutunlari:
+      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN eposta_sifre TEXT")
+    if "kullanici_adi" not in kullanici_sutunlari:
+      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN kullanici_adi TEXT")
+    if "sifre" not in kullanici_sutunlari:
+      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN sifre TEXT")
+    if "is_banned" not in kullanici_sutunlari:
+      cursor.execute(
+          "ALTER TABLE kullanicilar ADD COLUMN is_banned INTEGER DEFAULT 0"
+      )
+    if "islem_hakki" not in kullanici_sutunlari:
+      cursor.execute(
+          "ALTER TABLE kullanicilar ADD COLUMN islem_hakki INTEGER DEFAULT 20"
+      )
+    if "kayit_tarihi" not in kullanici_sutunlari:
+      cursor.execute(
+          "ALTER TABLE kullanicilar ADD COLUMN kayit_tarihi TIMESTAMP DEFAULT"
+          " CURRENT_TIMESTAMP"
+      )
+
+    cursor.execute("PRAGMA table_info(announcements)")
+    announcement_sutunlari = [sutun[1] for sutun in cursor.fetchall()]
+    if "bitis_tarihi" not in announcement_sutunlari:
+      cursor.execute("ALTER TABLE announcements ADD COLUMN bitis_tarihi TIMESTAMP")
+
+    conn.commit()
+except Exception as e:
+  st.error(f"DB Migrasyon Hatası: {e}")
+
+# --- SÜRESİ DOLAN DUYURULARI TEMİZLEME ---
+try:
+  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+    cursor = conn.cursor()
+    simdi = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("DELETE FROM announcements WHERE bitis_tarihi < ?", (simdi,))
     conn.commit()
 except Exception:
   pass
@@ -527,7 +441,7 @@ st.sidebar.markdown(
 )
 st.sidebar.markdown("---")
 
-# GİRİŞ / KAYIT EKRANI
+# --- GİRİŞ / KAYIT EKRANI ---
 if not st.session_state.giris_yapildi:
   st.markdown(
       "<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB"
@@ -622,7 +536,7 @@ if not st.session_state.giris_yapildi:
       )
 
       st.markdown("<br>", unsafe_allow_html=True)
-      if st.button("Kayıt İşlemini Tamamla", use_container_width=True):
+      if st.button("Kayıt Ol", use_container_width=True):
         if not k_kadi.strip() or not k_sifre.strip() or not k_eposta.strip():
           st.error("Kullanıcı adı, şifre ve e-posta zorunludur!")
         else:
@@ -658,13 +572,16 @@ if not st.session_state.giris_yapildi:
           except Exception as e:
             st.error(f"Hata: {e}")
 
-# ANA UYGULAMA
+# --- ANA UYGULAMA (GİRİŞ YAPILDIKTAN SONRA) ---
 else:
   try:
     with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
       cursor = conn.cursor()
+      simdi_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       cursor.execute(
-          "SELECT message FROM announcements ORDER BY id DESC LIMIT 1"
+          "SELECT message FROM announcements WHERE bitis_tarihi >= ? ORDER BY id"
+          " DESC LIMIT 1",
+          (simdi_str,),
       )
       son_duyuru = cursor.fetchone()
       if son_duyuru and son_duyuru[0]:
@@ -672,7 +589,7 @@ else:
             f"""
                 <div class="announcement-banner">
                     <div style="font-size: 24px;">📢</div>
-                    <div><strong>Yönetici Duyurusu:</strong><br>{son_duyuru[0]}</div>
+                    <div><strong>Yönetici Duyurusu (10 Dakika İçinde Silinir):</strong><br>{son_duyuru[0]}</div>
                 </div>
             """,
             unsafe_allow_html=True,
@@ -684,7 +601,9 @@ else:
   with col_baslik1:
     st.title("🚗 AUTO-LAB Pro Dashboard")
     rol_etiketi = (
-        "🛡️ Sistem Yöneticisi" if st.session_state.is_admin else "👤 Standart Üye"
+        "🛡️ Sistem Yöneticisi"
+        if st.session_state.is_admin
+        else "👤 Standart Üye"
     )
     st.markdown(
         f"Aktif Oturum: **{st.session_state.aktif_kullanici}** &nbsp; <span"
@@ -722,7 +641,7 @@ else:
         """
         <div class="dashboard-card">
             <h3>🌐 AUTO-LAB Tüm Araçlar Kronik Arıza & Ekspertiz Bilgi Bankası</h3>
-            <p style='font-size: 14px;'>Araç markası veya modeli (Örn: Honda, Fiat, Renault, Volkswagen, Ford, Toyota, Hyundai, Opel, Dacia) ya da genel alım sorusu yazın; sistem kronik sorunları ve eksper raporunu anında ekrana getirsin.</p>
+            <p style='font-size: 14px;'>Araç markası veya modeli (Örn: Honda, Fiat, Renault, Volkswagen vb.) yazın; sistem kronik sorunları ve eksper raporunu ekrana getirsin.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -766,10 +685,8 @@ else:
         except Exception as e:
           st.error(f"Hata: {e}")
 
-        # Genişletilmiş Kronik Sorunlar Bilgi Bankasından Yanıt Al
         web_arastirma_sonucu = internetten_arac_ve_veri_arastir(aranan)
 
-        # Araba analizleri veritabanına kaydet
         try:
           with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
             cursor = conn.cursor()
@@ -789,7 +706,6 @@ else:
         except Exception:
           pass
 
-        # Discorda raporu gönder
         discorda_mesaj_gonder(
             f"🔍 **Genişletilmiş Kronik Arıza Sorgusu:**\n"
             f"👤 **Kullanıcı:** `{st.session_state.aktif_kullanici}`\n"
@@ -812,24 +728,24 @@ else:
         """
         <div class="dashboard-card">
             <h3>⚙ Hesap Güvenliği ve Şifre Güncelleme</h3>
-            <p style='font-size: 14px;'>Mevcut şifrenizi girerek yeni hesap şifrenizi güvenle güncelleyebilirsiniz.</p>
+            <p style='font-size: 14px;'>Mevcut şifrenizi doğrulayarak yeni hesap şifrenizi güncelleyebilirsiniz.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    eski_sifre = st.text_input("Mevcut Şifreniz:", type="password")
-    yeni_sifre_1 = st.text_input("Yeni Şifreniz:", type="password")
-    yeni_sifre_2 = st.text_input("Yeni Şifreniz (Tekrar):", type="password")
+    eski_sifre = st.text_input("Mevcut Şifre:", type="password")
+    yeni_sifre = st.text_input("Yeni Şifre:", type="password")
+    yeni_sifre_tekrar = st.text_input("Yeni Şifre (Tekrar):", type="password")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("Şifreyi Güncelle", use_container_width=True):
-      if yeni_sifre_1 == yeni_sifre_2 and yeni_sifre_1.strip():
-        if st.session_state.is_admin:
-          st.warning(
-              "⚠ Yönetici (`ADMIN`) ana şifresi bu ekrandan"
-              " değiştirilemez."
-          )
+    if st.button("Şifremi Güncelle", use_container_width=True):
+      if not eski_sifre or not yeni_sifre or not yeni_sifre_tekrar:
+        st.error("Lütfen tüm alanları doldurun!")
+      elif yeni_sifre != yeni_sifre_tekrar:
+        st.error("Yeni şifreler birbiriyle uyuşmuyor!")
+      else:
+        if st.session_state.aktif_kullanici == "ADMIN":
+          st.error("Admin şifresi bu ekrandan değiştirilemez.")
         else:
           try:
             with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
@@ -839,61 +755,75 @@ else:
                   (st.session_state.aktif_kullanici,),
               )
               row = cursor.fetchone()
-              if row and row[0] == sifre_hashle(eski_sifre):
+              if row and row[0] == sifre_hashle(eski_sifre.strip()):
                 cursor.execute(
-                    "UPDATE kullanicilar SET sifre = ? WHERE"
-                    " kullanici_adi = ?",
+                    "UPDATE kullanicilar SET sifre = ? WHERE kullanici_adi = ?",
                     (
-                        sifre_hashle(yeni_sifre_1),
+                        sifre_hashle(yeni_sifre.strip()),
                         st.session_state.aktif_kullanici,
                     ),
                 )
                 conn.commit()
-                discorda_mesaj_gonder(
-                    f"🔑 **Şifre Değişikliği:** `{st.session_state.aktif_kullanici}`"
-                    " kullanıcısı şifresini güncelledi."
+                st.success(
+                    "Şifreniz başarıyla güncellendi! Bir sonraki girişinizde"
+                    " yeni şifrenizi kullanabilirsiniz."
                 )
-                st.success("Şifreniz başarıyla güncellendi!")
+                discorda_mesaj_gonder(
+                    f"🔐 **Şifre Güncellendi:** `{st.session_state.aktif_kullanici}`"
+                    " şifresini değiştirdi."
+                )
               else:
-                st.error("Mevcut şifre hatalı!")
+                st.error("Mevcut şifreniz hatalı!")
           except Exception as e:
             st.error(f"Hata: {e}")
-      else:
-        st.error("Yeni şifreler uyuşmuyor!")
 
-  elif sekme == "🛡 Admin Paneli":
-    if not st.session_state.is_admin:
-      st.warning("⚠ Bu alana sadece ADMIN yetkisi olanlar erişebilir.")
-    else:
-      st.markdown(
-          """
-            <div class="dashboard-card">
-                <h3>🛡️ Sistem Yönetim ve Log Paneli</h3>
-                <p style='font-size: 14px;'>Duyuru yayınlayabilir, kullanıcıların kalan işlem haklarını ve şifrelerini yönetebilir, ayrıca arama ve kronik arıza sorgu loglarını inceleyebilirsiniz.</p>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
+  elif sekme == "🛡️ Admin Paneli" and st.session_state.is_admin:
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>🛡️ Yönetici Kontrol Paneli</h3>
+            <p style='font-size: 14px;'>10 dakika sonra otomatik silinen duyurular yayınlayabilir, kayıt olan tüm kullanıcıların detaylı bilgilerini listeleyebilir ve güvenlik loglarını inceleyebilirsiniz.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-      # Duyuru Alanı
-      yeni_duyuru = st.text_input("Yeni Duyuru Metni:")
-      if st.button("Duyuruyu Yayınla", use_container_width=True):
-        if yeni_duyuru.strip():
-          with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO announcements (message) VALUES (?)",
-                (yeni_duyuru.strip(),),
+    tab_duyuru, tab_kullanicilar, tab_loglar = st.tabs(
+        ["📢 Duyuru Yayınla", "👥 Kullanıcı Yönetimi", "📋 Sistem Logları"]
+    )
+
+    with tab_duyuru:
+      st.markdown("#### Yeni Duyuru Ekle (10 Dakika Sonra Otomatik Silinir)")
+      duyuru_metni = st.text_area("Duyuru İçeriği:")
+      if st.button("Duyuruyu Yayınla (10dk)", use_container_width=True):
+        if duyuru_metni.strip():
+          try:
+            simdi = datetime.now()
+            bitis = simdi + timedelta(minutes=10)
+            bitis_str = bitis.strftime("%Y-%m-%d %H:%M:%S")
+
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "INSERT INTO announcements (message, bitis_tarihi) VALUES"
+                  " (?, ?)",
+                  (duyuru_metni.strip(), bitis_str),
+              )
+              conn.commit()
+            st.success(
+                "Duyuru başarıyla yayınlandı! 10 dakika sonra otomatik olarak"
+                " kaldırılacaktır."
             )
-            conn.commit()
-          discorda_mesaj_gonder(
-              f"📢 **Yeni Duyuru Yayınlandı:** {yeni_duyuru.strip()}"
-          )
-          st.success("Duyuru yayınlandı!")
+            discorda_mesaj_gonder(
+                f"📢 **Yeni Duyuru Yayınlandı (10dk Süreli):**\n{duyuru_metni.strip()}"
+            )
+          except Exception as e:
+            st.error(f"Hata: {e}")
+        else:
+          st.error("Duyuru metni boş olamaz!")
 
-      st.markdown("<br>---<br>", unsafe_allow_html=True)
-      st.markdown("### 👥 Kayıtlı Kullanıcılar ve İşlem Hakları Yönetimi")
-
+    with tab_kullanicilar:
+      st.markdown("#### Kayıtlı Tüm Üyeler ve Hesap Bilgileri")
       try:
         with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
           df_kullanicilar = pd.read_sql_query(
@@ -901,95 +831,17 @@ else:
               " is_banned, islem_hakki, kayit_tarihi FROM kullanicilar",
               conn,
           )
-          if not df_kullanicilar.empty:
-            st.dataframe(df_kullanicilar, use_container_width=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### ⚙️ Kullanıcı İşlem & Şifre Yönetimi")
-            secilen_kullanici = st.selectbox(
-                "İşlem Yapılacak Kullanıcıyı Seç:",
-                df_kullanicilar["kullanici_adi"].tolist(),
-            )
-
-            col_adm1, col_adm2 = st.columns(2)
-            with col_adm1:
-              yeni_gecici_sifre = st.text_input(
-                  "Yeni Şifre Belirle:", type="password", key="admin_yeni_sifre"
-              )
-              if st.button(
-                  "Seçilen Kullanıcının Şifresini Güncelle",
-                  use_container_width=True,
-              ):
-                if yeni_gecici_sifre.strip():
-                  cursor = conn.cursor()
-                  cursor.execute(
-                      "UPDATE kullanicilar SET sifre = ? WHERE"
-                      " kullanici_adi = ?",
-                      (
-                          sifre_hashle(yeni_gecici_sifre.strip()),
-                          secilen_kullanici,
-                      ),
-                  )
-                  conn.commit()
-                  st.success(
-                      f"'{secilen_kullanici}' kullanıcısının şifresi"
-                      " güncellendi!"
-                  )
-                  discorda_mesaj_gonder(
-                      f"🛡️ **Admin Şifre Güncellemesi:** Admin,"
-                      f" `{secilen_kullanici}` kullanıcısının şifresini"
-                      " değiştirdi."
-                  )
-                else:
-                  st.error("Lütfen geçerli bir şifre girin!")
-
-            with col_adm2:
-              st.write("")
-              st.write("")
-              if st.button(
-                  "🚫 Seçilen Kullanıcıyı Sil / Banla",
-                  use_container_width=True,
-              ):
-                cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE kullanicilar SET is_banned = 1 WHERE"
-                    " kullanici_adi = ?",
-                    (secilen_kullanici,),
-                )
-                conn.commit()
-                st.warning(f"'{secilen_kullanici}' kullanıcısı yasaklandı!")
-                discorda_mesaj_gonder(
-                    f"🚫 **Admin Yasaklama:** Admin, `{secilen_kullanici}`"
-                    " kullanıcısının erişimini engelledi."
-                )
-
-            # Arama Geçmişi Logları
-            st.markdown("<br>---<br>", unsafe_allow_html=True)
-            st.markdown("### 📋 Kullanıcı Arama Geçmişi Logları")
-            df_arama_log = pd.read_sql_query(
-                "SELECT id, kullanici, aranan_kelime, bulunan_sonuc_sayisi,"
-                " tarih FROM arama_gecmisi ORDER BY id DESC LIMIT 50",
-                conn,
-            )
-            if not df_arama_log.empty:
-              st.dataframe(df_arama_log, use_container_width=True)
-            else:
-              st.info("Henüz arama geçmişi bulunmuyor.")
-
-            # Araç Analizi Logları
-            st.markdown("<br>---<br>", unsafe_allow_html=True)
-            st.markdown("### 🌐 Kronik Arıza Sorgu Logları")
-            df_analiz_log = pd.read_sql_query(
-                "SELECT id, kullanici, arac_bilgisi, butce_amac, tarih FROM"
-                " araba_analizleri ORDER BY id DESC LIMIT 50",
-                conn,
-            )
-            if not df_analiz_log.empty:
-              st.dataframe(df_analiz_log, use_container_width=True)
-            else:
-              st.info("Henüz analiz geçmişi bulunmuyor.")
-
-          else:
-            st.info("Sistemde kayıtlı kullanıcı bulunmuyor.")
+          st.dataframe(df_kullanicilar, use_container_width=True)
       except Exception as e:
-        st.error(f"Veritabanı yüklenirken hata oluştu: {e}")
+        st.error(f"Hata: {e}")
+
+    with tab_loglar:
+      st.markdown("#### Son Giriş ve İşlem Logları")
+      try:
+        with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+          df_loglar = pd.read_sql_query(
+              "SELECT * FROM giris_loglari ORDER BY id DESC LIMIT 50", conn
+          )
+          st.dataframe(df_loglar, use_container_width=True)
+      except Exception as e:
+        st.error(f"Hata: {e}")
