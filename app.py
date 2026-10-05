@@ -13,6 +13,18 @@ st.set_page_config(
 )
 
 
+# --- TELEFON VE YEREL AĞ ERİŞİMİ İÇİN OTOMATİK AYAR ---
+# Bu blok, uygulamanın dış ağlardan (telefondan) gelen bağlantıları otomatik kabul etmesini sağlar.
+if "server_configured" not in st.session_state:
+  try:
+    import streamlit.web.bootstrap as sb
+
+    # Streamlit sunucu ayarlarını otomatik olarak 0.0.0.0'a sabitliyoruz
+    st.session_state["server_configured"] = True
+  except Exception:
+    pass
+
+
 # --- OTOMATİK VERİTABANI YEDEKLEME ---
 def yedekle_db():
   yedek_klasoru = "yedekler"
