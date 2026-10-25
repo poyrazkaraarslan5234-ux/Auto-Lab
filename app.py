@@ -80,8 +80,8 @@ def discorda_mesaj_gonder(mesaj):
   if not DISCORD_WEBHOOK_URL or not DISCORD_WEBHOOK_URL.startswith("http"):
     return
   try:
-    zaman_damgasi = datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-    formatli_mesaj = f"🕒 `[{zaman_damgasi}]`\n{mesaj}"
+    zaman_dagmasi = datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+    formatli_mesaj = f"🕒 `[{zaman_dagmasi}]`\n{mesaj}"
     requests.post(
         DISCORD_WEBHOOK_URL, json={"content": formatli_mesaj}, timeout=5
     )
@@ -343,55 +343,4 @@ st.markdown(
 
 
 def sifre_hashle(sifre):
-  return hashlib.sha256(sifre.encode("utf-8")).hexdigest()
-
-
-def giris_kaydi_ekle(kullanici_adi, islem_tipi):
-  try:
-    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
-      cursor = conn.cursor()
-      cursor.execute(
-          "INSERT INTO giris_loglari (kullanici_adi, islem_tipi) VALUES (?, ?)",
-          (kullanici_adi, islem_tipi),
-      )
-      conn.commit()
-  except Exception:
-    pass
-
-
-# Session State Tanımları
-if "aktif_kullanici" not in st.session_state:
-  st.session_state.aktif_kullanici = None
-
-if "giris_yapildi" not in st.session_state:
-  st.session_state.giris_yapildi = False
-
-if "is_admin" not in st.session_state:
-  st.session_state.is_admin = False
-
-# Veritabanı Tablolarını Oluşturma ve Migrasyon
-try:
-  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS kullanicilar (id INTEGER PRIMARY KEY"
-        " AUTOINCREMENT, ad TEXT, soyad TEXT, eposta TEXT, eposta_sifre TEXT,"
-        " kullanici_adi TEXT UNIQUE, sifre TEXT, is_banned INTEGER DEFAULT 0,"
-        " islem_hakki INTEGER DEFAULT 20, kayit_tarihi TIMESTAMP DEFAULT"
-        " CURRENT_TIMESTAMP)"
-    )
-
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS arama_gecmisi (id INTEGER PRIMARY KEY"
-        " AUTOINCREMENT, kullanici TEXT, aranan_kelime TEXT,"
-        " bulunan_sonuc_sayisi INTEGER, tarih TIMESTAMP DEFAULT"
-        " CURRENT_TIMESTAMP)"
-    )
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS giris_loglari (id INTEGER PRIMARY KEY"
-        " AUTOINCREMENT, kullanici_adi TEXT, islem_tipi TEXT, tarih TIMESTAMP"
-        " DEFAULT CURRENT_TIMESTAMP)"
-    )
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS announcements (id INTEGER PRIMARY KEY"
+  return hashlib.
