@@ -24,7 +24,6 @@ try:
         )
         kayitlar = cursor.fetchall()
         for k in kayitlar:
-          # Periyodik arka plan bakım/kontrol simülasyonu
           pass
     except Exception:
       pass
@@ -312,8 +311,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 def sifre_hashle(sifre):
   return hashlib.sha256(sifre.encode("utf-8")).hexdigest()
+
 
 def giris_kaydi_ekle(kullanici_adi, islem_tipi):
   try:
@@ -329,6 +330,7 @@ def giris_kaydi_ekle(kullanici_adi, islem_tipi):
       conn.commit()
   except Exception:
     pass
+
 
 # Session State Tanımları
 if "aktif_kullanici" not in st.session_state:
@@ -448,4 +450,75 @@ yeni_secim = st.sidebar.selectbox(
     index=list(PALETLER.keys()).index(st.session_state.secilen_tema),
 )
 if yeni_secim != st.session_state.secilen_tema:
-  st.session_
+  st.session_state.secilen_tema = yeni_secim
+  st.rerun()
+
+st.sidebar.markdown("---")
+
+wa_mesaj = "Selam, AUTO-LAB Pro uygulaması şifremi unuttum. Yardımcı olur musun?"
+wa_link = f"https://wa.me/{WHATSAPP_NUMARASI}?text={requests.utils.quote(wa_mesaj)}"
+st.sidebar.markdown(
+    f'<a href="{wa_link}" target="_blank"><button'
+    " style='background: linear-gradient(135deg, #059669, #10b981); color:white;"
+    " border:none; padding:10px 15px; border-radius:12px; font-weight:600;"
+    " cursor:pointer; width:100%; box-shadow: 0 4px 15px rgba(16, 185, 129,"
+    " 0.35);'>💬 WhatsApp Destek Hattı</button></a>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown("---")
+
+# --- GİRİŞ / KAYIT / ŞİFRE SIFIRLAMA EKRANI ---
+if not st.session_state.giris_yapildi:
+  st.markdown(
+      "<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB"
+      " Pro'ya Hoş Geldiniz</h1><p>Devam etmek için lütfen giriş yapın, hesap"
+      " oluşturun veya şifrenizi sıfırlayın.</p></div>",
+      unsafe_allow_html=True,
+  )
+
+  col_bos1, col_form, col_bos2 = st.columns([1, 1.4, 1])
+  with col_form:
+    tab_giris, tab_kayit, tab_sifre_sifirla = st.tabs(
+        ["🔑 Giriş Yap", "📝 Hesap Oluştur", "🔄 Şifre Sıfırla"]
+    )
+
+    with tab_giris:
+      st.markdown("<br>", unsafe_allow_html=True)
+      g_kullanici = st.text_input("Kullanıcı Adı:", key="giris_kadi")
+      g_sifre = st.text_input("Şifre:", type="password", key="giris_sifre")
+
+      st.markdown("<br>", unsafe_allow_html=True)
+      if st.button("Sisteme Giriş Yap", use_container_width=True):
+        girilen_kadi = g_kullanici.strip()
+        girilen_sifre = g_sifre.strip()
+
+        if girilen_kadi.upper() in ["ADMIN", "ADMİN"] and girilen_sifre in [
+            "ADMIN",
+            "ADMİN",
+        ]:
+          st.session_state.aktif_kullanici = "ADMIN"
+          st.session_state.is_admin = True
+          st.session_state.giris_yapildi = True
+          giris_kaydi_ekle("ADMIN", "Admin Girişi Yaptı")
+          discorda_mesaj_gonder(
+              "🛡️ **Admin Girişi:** `ADMIN` sisteme normal giriş ekranından"
+              " yönetici olarak giriş yaptı."
+          )
+          st.success("Yönetici girişi başarılı!")
+          st.rerun()
+        else:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "SELECT ad, soyad, eposta, eposta_sifre, sifre,"
+                  " is_banned, islem_hakki FROM kullanicilar WHERE"
+                  " kullanici_adi = ?",
+                  (girilen_kadi,),
+              )
+              row = cursor.fetchone()
+              if row and row[4] == sifre_hashle(girilen_sifre):
+                if row[5] == 1:
+                  st.error("⚠ Bu hesap yasaklanmıştır!")
+                else:
+                  st.session_state
