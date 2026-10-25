@@ -142,9 +142,13 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
 - **Şanzıman:** M/M (MultiMode) yarı otomatik şanzımanlarda baskı balata ve aktüatör hatası sık görülür. Tam otomatik veya manuel versiyonları daha sorunsuzdur."""
 
   else:
-    return f"""[AUTO-LAB AKILLI ARAMA MOTORU: '{arama_sorgusu}']
-- **Arama Detayı:** Aradığınız model için genişletilmiş otomotiv veri tabanı tarandı.
-- **Temel Tavsiye:** İkinci el araç alımında TSE belgeli kurumsal bir oto ekspertiz merkezine mutlaka başvurun ve tramer kaydını sorgulayın."""
+    return (
+        f"[AUTO-LAB AKILLI ARAMA MOTORU: '{arama_sorgusu}']\n- **Arama"
+        " Detayı:** Aradığınız model için genişletilmiş otomotiv veri tabanı"
+        " tarandı.\n- **Temel Tavsiye:** İkinci el araç alımında TSE belgeli"
+        " kurumsal bir oto ekspertiz merkezine mutlaka başvurun ve tramer"
+        " kaydını sorgulayın."
+    )
 
 # --- RENK PALETLERİ SÖZLÜĞÜ ---
 PALETLER = {
@@ -305,3 +309,155 @@ st.markdown(
         border: 1px solid {aktif_palet['accent']};
         display: inline-block;
     }}
+    </style>
+    <div class="login-background"></div>
+""",
+    unsafe_allow_html=True,
+)
+
+
+def sifre_hashle(sifre):
+  return hashlib.sha256(sifre.encode("utf-8")).hexdigest()
+
+
+def giris_kaydi_ekle(kullanici_adi, islem_tipi):
+  try:
+    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+      cursor = conn.cursor()
+      cursor.execute(
+          """
+                INSERT INTO giris_loglari (kullanici_adi, islem_tipi)
+                VALUES (?, ?)
+            """,
+          (kullanici_adi, islem_tipi),
+      )
+      conn.commit()
+  except Exception:
+    pass
+
+
+# Session State Tanımları
+if "aktif_kullanici" not in st.session_state:
+  st.session_state.aktif_kullanici = None
+
+if "giris_yapildi" not in st.session_state:
+  st.session_state.giris_yapildi = False
+
+if "is_admin" not in st.session_state:
+  st.session_state.is_admin = False
+
+# Veritabanı Tablolarını Oluşturma ve Migrasyon
+try:
+  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+    cursor = conn.cursor()
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS kullanicilar (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ad TEXT,
+                soyad TEXT,
+                eposta TEXT,
+                eposta_sifre TEXT,
+                kullanici_adi TEXT UNIQUE,
+                sifre TEXT,
+                is_banned INTEGER DEFAULT 0,
+                islem_hakki INTEGER DEFAULT 20,
+                kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS arama_gecmisi (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici TEXT,
+                aranan_kelime TEXT,
+                bulunan_sonuc_sayisi INTEGER,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS giris_loglari (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici_adi TEXT,
+                islem_tipi TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                bitis_tarihi TIMESTAMP
+            )
+        """)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS araba_analizleri (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici TEXT,
+                arac_bilgisi TEXT,
+                butce_amac TEXT,
+                analiz_sonucu TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS arac_masraflari (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici TEXT,
+                arac_model TEXT,
+                masraf_turu TEXT,
+                tutar REAL,
+                aciklama TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    cursor.execute("PRAGMA table_info(kullanicilar)")
+    kullanici_sutunlari = [sutun[1] for sutun in cursor.fetchall()]
+    if "islem_hakki" not in kullanici_sutunlari:
+      cursor.execute(
+          "ALTER TABLE kullanicilar ADD COLUMN islem_hakki INTEGER DEFAULT 20"
+      )
+
+    conn.commit()
+except Exception as e:
+  st.error(f"DB Migrasyon Hatası: {e}")
+
+# --- SÜRESİ DOLAN DUYURULARI TEMİZLE ---
+try:
+  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+    cursor = conn.cursor()
+    simdi = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("DELETE FROM announcements WHERE bitis_tarihi < ?", (simdi,))
+    conn.commit()
+except Exception:
+  pass
+
+# --- SİDEBAR & RENK PALETİ SEÇİCİ ---
+st.sidebar.markdown(
+    f"<h2 style='text-align: center; color: {aktif_palet['btn_1']};"
+    " font-weight:700;'><span style='font-size: 28px;'>🚗</span> AUTO-LAB"
+    " PRO</h2>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown(
+    "<p style='text-align: center; font-size: 13px; margin-top:"
+    " -10px;'>Otomotiv & Yönetim Ekosistemi</p>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown("---")
+
+yeni_secim = st.sidebar.selectbox(
+    "🎨 Renk Kombinasyonu Seç:",
+    list(PALETLER.keys()),
+    index=list(PALETLER.keys()).index(st.session_state.secilen_tema),
+)
+if yeni_secim != st.session_state.secilen_tema:
+  st.session_state.secilen_tema = yeni_secim
+  st.rerun()
+
+st.sidebar.markdown("---")
+
+wa_mesaj = "Selam, AUTO-LAB Pro uygulaması şifremi unuttum. Yardımcı olur musun?"
+wa_link = f"
