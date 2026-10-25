@@ -93,10 +93,15 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
   sorgu_kucuk = arama_sorgusu.lower().strip()
 
   if "honda" in sorgu_kucuk or "civic" in sorgu_kucuk or "ies" in sorgu_kucuk:
-    return """[AUTO-LAB KRONİK ANALİZ: HONDA]
-- **Motor ve Mekanik:** Yüksek devir sevdası nedeniyle subap ayarı sıkılaşması görülebilir. VTEC motorlarda üst kapak contası ve müşirinde terleme sık rastlanır.
-- **Şanzıman:** Manuel şanzımanları sağlamdır. Otomatik modellerde yağ değişimi aksatıldıysa geçişlerde gecikme olabilir.
-- **Eksper Önerisi:** Yağ kaçağı, alt takım burçları ve subap sesine mutlaka baktırın."""
+    return (
+        "[AUTO-LAB KRONİK ANALİZ: HONDA]\n- **Motor ve Mekanik:** Yüksek devir"
+        " sevdası nedeniyle subap ayarı sıkılaşması görülebilir. VTEC"
+        " motorlarda üst kapak contası ve müşirinde terleme sık rastlanır.\n-"
+        " **Şanzıman:** Manuel şanzımanları sağlamdır. Otomatik modellerde yağ"
+        " değişimi aksatıldıysa geçişlerde gecikme olabilir.\n- **Eksper"
+        " Önerisi:** Yağ kaçağı, alt takım burçları ve subap sesine mutlaka"
+        " baktırın."
+    )
 
   elif (
       "fiat" in sorgu_kucuk
@@ -105,10 +110,15 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "linea" in sorgu_kucuk
       or "multijet" in sorgu_kucuk
   ):
-    return """[AUTO-LAB KRONİK ANALİZ: FİAT (EGEA / DOBLO / LİNEA / MULTİJET)]
-- **Motor ve Mekanik:** 1.3 ve 1.6 Multijet motorlar ömürlüktür ancak EGR valfi ve kurum bağlama sorunları kroniktir. Enjektör pulları sızdırma yapabilir.
-- **Şanzıman & Yürüyen:** Ön takım (salıncaklar, rotiller) bozuk yollarda çabuk aşınır ve ses yapar.
-- **Eksper Önerisi:** Turbo basıncı, enjektör püskürtme değerleri ve alt takım boşlukları mutlaka test edilmelidir."""
+    return (
+        "[AUTO-LAB KRONİK ANALİZ: FİAT (EGEA / DOBLO / LİNEA / MULTİJET)]\n-"
+        " **Motor ve Mekanik:** 1.3 ve 1.6 Multijet motorlar ömürlüktür ancak"
+        " EGR valfi ve kurum bağlama sorunları kroniktir. Enjektör pulları"
+        " sızdırma yapabilir.\n- **Şanzıman & Yürüyen:** Ön takım (salıncaklar,"
+        " rotiller) bozuk yollarda çabuk aşınır ve ses yapar.\n- **Eksper"
+        " Önerisi:** Turbo basıncı, enjektör püskürtme değerleri ve alt takım"
+        " boşlukları mutlaka test edilmelidir."
+    )
 
   elif (
       "renault" in sorgu_kucuk
@@ -116,9 +126,13 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "clio" in sorgu_kucuk
       or "edc" in sorgu_kucuk
   ):
-    return """[AUTO-LAB KRONİK ANALİZ: RENAULT & DACİA]
-- **Motor ve Mekanik:** 1.5 dCi motorlar az yakar ancak turbo yatak aşınmasına dikkat edilmelidir.
-- **Şanzıman (EDC Çift Kavrama):** Trafikte dur-kalk yaparken titreme veya silkeleme kroniktir. Kavrama ve mekatronik testi şarttır."""
+    return (
+        "[AUTO-LAB KRONİK ANALİZ: RENAULT & DACİA]\n- **Motor ve Mekanik:** 1.5"
+        " dCi motorlar az yakar ancak turbo yatak aşınmasına dikkat"
+        " edilmelidir.\n- **Şanzıman (EDC Çift Kavrama):** Trafikte dur-kalk"
+        " yaparken titreme veya silkeleme kroniktir. Kavrama ve mekatronik testi"
+        " şarttır."
+    )
 
   elif (
       "volkswagen" in sorgu_kucuk
@@ -127,19 +141,31 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "passat" in sorgu_kucuk
       or "dsg" in sorgu_kucuk
   ):
-    return """[AUTO-LAB KRONİK ANALİZ: VOLKSWAGEN / VAG GRUBU]
-- **Şanzıman (DSG):** 7 ileri kuru kavrama DSG'lerde mekatronik arızası ve kavramanın erken aşınması en bilinen sorundur.
-- **Motor (TSI / TDI):** TSI'larda zincir uzaması sesine, TDI'larda ise EGR ve DPF tıkanma eğilimine dikkat edilmelidir."""
+    return (
+        "[AUTO-LAB KRONİK ANALİZ: VOLKSWAGEN / VAG GRUBU]\n- **Şanzıman"
+        " (DSG):** 7 ileri kuru kavrama DSG'lerde mekatronik arızası ve"
+        " kavramanın erken aşınması en bilinen sorundur.\n- **Motor (TSI /"
+        " TDI):** TSI'larda zincir uzaması sesine, TDI'larda ise EGR ve DPF"
+        " tıkanma eğilimine dikkat edilmelidir."
+    )
 
   elif "ford" in sorgu_kucuk or "focus" in sorgu_kucuk or "fiesta" in sorgu_kucuk:
-    return """[AUTO-LAB KRONİK ANALİZ: FORD]
-- **Motor & Mekanik:** 1.5 TDCi motorlar dayanıklıdır ancak enjektör ve dpf sensör arızaları görülebilir. Benzinli Ecoboost motorlarda soğutma hortumlarına dikkat edilmelidir.
-- **Şanzıman:** PowerShift şanzımanlarda ısınma ve kavrama sarsıntısı kroniktir, manuel tercih edilebilir."""
+    return (
+        "[AUTO-LAB KRONİK ANALİZ: FORD]\n- **Motor & Mekanik:** 1.5 TDCi"
+        " motorlar dayanıklıdır ancak enjektör ve dpf sensör arızaları"
+        " görülebilir. Benzinli Ecoboost motorlarda soğutma hortumlarına dikkat"
+        " edilmelidir.\n- **Şanzıman:** PowerShift şanzımanlarda ısınma ve"
+        " kavrama sarsıntısı kroniktir, manuel tercih edilebilir."
+    )
 
   elif "toyota" in sorgu_kucuk or "corolla" in sorgu_kucuk or "yaris" in sorgu_kucuk:
-    return """[AUTO-LAB KRONİK ANALİZ: TOYOTA]
-- **Motor & Mekanik:** Atmosferik motorları (VVT-i) oldukça sorunsuzdur ve tüple uyumludur. 
-- **Şanzıman:** M/M (MultiMode) yarı otomatik şanzımanlarda baskı balata ve aktüatör hatası sık görülür. Tam otomatik veya manuel versiyonları daha sorunsuzdur."""
+    return (
+        "[AUTO-LAB KRONİK ANALİZ: TOYOTA]\n- **Motor & Mekanik:** Atmosferik"
+        " motorları (VVT-i) oldukça sorunsuzdur ve tüple uyumludur. \n-"
+        " **Şanzıman:** M/M (MultiMode) yarı otomatik şanzımanlarda baskı"
+        " balata ve aktüatör hatası sık görülür. Tam otomatik veya manuel"
+        " versiyonları daha sorunsuzdur."
+    )
 
   else:
     return (
@@ -325,10 +351,7 @@ def giris_kaydi_ekle(kullanici_adi, islem_tipi):
     with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
       cursor = conn.cursor()
       cursor.execute(
-          """
-                INSERT INTO giris_loglari (kullanici_adi, islem_tipi)
-                VALUES (?, ?)
-            """,
+          "INSERT INTO giris_loglari (kullanici_adi, islem_tipi) VALUES (?, ?)",
           (kullanici_adi, islem_tipi),
       )
       conn.commit()
@@ -351,58 +374,24 @@ try:
   with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
     cursor = conn.cursor()
 
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS kullanicilar (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ad TEXT,
-                soyad TEXT,
-                eposta TEXT,
-                eposta_sifre TEXT,
-                kullanici_adi TEXT UNIQUE,
-                sifre TEXT,
-                is_banned INTEGER DEFAULT 0,
-                islem_hakki INTEGER DEFAULT 20,
-                kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS kullanicilar (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, ad TEXT, soyad TEXT, eposta TEXT, eposta_sifre TEXT,"
+        " kullanici_adi TEXT UNIQUE, sifre TEXT, is_banned INTEGER DEFAULT 0,"
+        " islem_hakki INTEGER DEFAULT 20, kayit_tarihi TIMESTAMP DEFAULT"
+        " CURRENT_TIMESTAMP)"
+    )
 
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS arama_gecmisi (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                kullanici TEXT,
-                aranan_kelime TEXT,
-                bulunan_sonuc_sayisi INTEGER,
-                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS giris_loglari (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                kullanici_adi TEXT,
-                islem_tipi TEXT,
-                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS announcements (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                message TEXT,
-                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                bitis_tarihi TIMESTAMP
-            )
-        """)
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS araba_analizleri (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                kullanici TEXT,
-                arac_bilgisi TEXT,
-                butce_amac TEXT,
-                analiz_sonucu TEXT,
-                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS arac_masraflari (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                kullanici TEXT,
-                arac
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS arama_gecmisi (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, kullanici TEXT, aranan_kelime TEXT,"
+        " bulunan_sonuc_sayisi INTEGER, tarih TIMESTAMP DEFAULT"
+        " CURRENT_TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS giris_loglari (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, kullanici_adi TEXT, islem_tipi TEXT, tarih TIMESTAMP"
+        " DEFAULT CURRENT_TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS announcements (id INTEGER PRIMARY KEY"
