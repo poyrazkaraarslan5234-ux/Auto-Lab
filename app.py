@@ -581,7 +581,600 @@ else:
   col_baslik1, col_baslik2 = st.columns([4, 1])
   with col_baslik1:
     st.title("🚗 AUTO-LAB Pro Dashboard")
-    rol_etiketi = (
-        "🛡️ Sistem Yöneticisi"
-        if st.session_state.is_admin
-        else
+    rol_etiketi = "🛡️ Sistem Yöneticisi" if st.session_state.is_admin else "👤 Standart Üye"
+    st.markdown(
+        f"Aktif Oturum: **{st.session_state.aktif_kullanici}** &nbsp; <span"
+        f" class='user-badge'>{rol_etiketi}</span>",
+        unsafe_allow_html=True,
+    )
+  with col_baslik2:
+    st.write("")
+    if st.button("🚪 Güvenli Çıkış", use_container_width=True):
+      giris_kaydi_ekle(st.session_state.aktif_kullanici, "Çıkış Yaptı")
+      st.session_state.giris_yapildi = False
+      st.session_state.aktif_kullanici = None
+      st.session_state.is_admin = False
+      st.rerun()
+
+  st.markdown("<br>", unsafe_allow_html=True)
+
+  # Navigasyon Menüsü
+  if st.session_state.is_admin:
+    menu_listesi = [
+        "🔍 Akıllı Arama & Kronik Sorunlar",
+        "⚖️ Araç Karşılaştırma",
+        "💰 Maliyet & Bakım Takip",
+        "📊 Piyasa & İstatistikler",
+        "📝 Ekspertiz Kontrol Listesi",
+        "🧮 Değer Kaybı & Tramer Hesapla",
+        "🗺️ Servis & İstasyon Bulucu",
+        "🛞 Lastik & Jant Ebat Kıyasla",
+        "⚙️ Şifremi Güncelle",
+        "🛡️ Admin Paneli",
+    ]
+  else:
+    menu_listesi = [
+        "🔍 Akıllı Arama & Kronik Sorunlar",
+        "⚖️ Araç Karşılaştırma",
+        "💰 Maliyet & Bakım Takip",
+        "📊 Piyasa & İstatistikler",
+        "📝 Ekspertiz Kontrol Listesi",
+        "🧮 Değer Kaybı & Tramer Hesapla",
+        "🗺️ Servis & İstasyon Bulucu",
+        "🛞 Lastik & Jant Ebat Kıyasla",
+        "⚙️ Şifremi Güncelle",
+    ]
+
+  sekme = st.sidebar.radio("📌 Navigasyon Menüsü", menu_listesi)
+
+  # 1. AKILLI ARAMA & KRONİK SORUNLAR + KREDİ SİSTEMİ
+  if sekme == "🔍 Akıllı Arama & Kronik Sorunlar":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>🌐 AUTO-LAB Gelişmiş Akıllı Arama & Bilgi Bankası</h3>
+            <p style='font-size: 14px;'>İstediğiniz araç modelini veya arıza terimini arama çubuğuna yazarak detaylı teknik analiz, kronik arızalar ve eksper raporu alabilirsiniz.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    kalan_hak = 20
+    if not st.session_state.is_admin:
+      try:
+        with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+          cursor = conn.cursor()
+          cursor.execute(
+              "SELECT islem_hakki FROM kullanicilar WHERE kullanici_adi = ?",
+              (st.session_state.aktif_kullanici,),
+          )
+          h_row = cursor.fetchone()
+          if h_row:
+            kalan_hak = h_row[0]
+      except Exception:
+        pass
+      st.info(f"⚡ Kalan Sorgu / İşlem Hakkınız: **{kalan_hak}**")
+
+    arama_terimi = st.text_input(
+        "Aranacak marka, model (Honda, Ford, Toyota, Fiat vb.) veya kronik arıza"
+        " sorgusu:"
+    )
+    if st.button("Akıllı Arama Motoru ile Sorgula", use_container_width=True):
+      if not arama_terimi.strip():
+        st.error("Lütfen geçerli bir arama terimi girin!")
+      elif not st.session_state.is_admin and kalan_hak <= 0:
+        st.error("⚠ İşlem hakkınız (krediniz) tükenmiştir!")
+      else:
+        aranan = arama_terimi.strip()
+
+        if not st.session_state.is_admin:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "UPDATE kullanicilar SET islem_hakki = islem_hakki - 1 WHERE"
+                  " kullanici_adi = ?",
+                  (st.session_state.aktif_kullanici,),
+              )
+              conn.commit()
+          except Exception:
+            pass
+
+        web_arastirma_sonucu = internetten_arac_ve_veri_arastir(aranan)
+
+        try:
+          with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO araba_analizleri (kullanici, arac_bilgisi,"
+                " butce_amac, analiz_sonucu) VALUES (?, ?, ?, ?)",
+                (
+                    st.session_state.aktif_kullanici,
+                    aranan,
+                    "AUTO-LAB Akıllı Arama Modülü",
+                    web_arastirma_sonucu,
+                ),
+            )
+            conn.commit()
+        except Exception:
+          pass
+
+        discorda_mesaj_gonder(
+            f"🔍 **Akıllı Arama Gerçekleşti:**\n👤 **Kullanıcı:**"
+            f" `{st.session_state.aktif_kullanici}`\n🔎 **Aranan:** `{aranan}`"
+        )
+
+        st.markdown(
+            f"""
+                <div class="dashboard-card">
+                    <h3>🤖 Arama & Eksper Analiz Sonucu</h3>
+                    {web_arastirma_sonucu.replace(chr(10), '<br>')}
+                </div>
+                """,
+            unsafe_allow_html=True,
+        )
+
+        pdf_icerik = f"AUTO-LAB PRO - RESMİ EKSPER VE KRONİK RAPORU\nTarih: {datetime.now()}\nSorgulayan: {st.session_state.aktif_kullanici}\nSorgu: {aranan}\n\n{web_arastirma_sonucu}"
+        st.download_button(
+            label="📥 Resmi Raporu İndir (.TXT / .PDF Çıktısı)",
+            data=pdf_icerik,
+            file_name=f"autolab_resmi_rapor_{aranan}.txt",
+            mime="text/plain",
+        )
+
+  # 2. ARAÇ KARŞILAŞTIRMA MODÜLÜ
+  elif sekme == "⚖️ Araç Karşılaştırma":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>⚖️ İki Araç Karşılaştırma Modülü</h3>
+            <p style='font-size: 14px;'>İki farklı aracı yan yana kıyaslayın, teknik detaylarını ve avantajlarını inceleyin.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_k1, col_k2 = st.columns(2)
+    with col_k1:
+      arac1 = st.selectbox(
+          "1. Aracı Seçin:",
+          [
+              "Honda Civic 1.6 iES",
+              "Fiat Doblo 1.6 Multijet",
+              "Renault Megane",
+              "Ford Focus",
+          ],
+      )
+    with col_k2:
+      arac2 = st.selectbox(
+          "2. Aracı Seçin:",
+          [
+              "Fiat Doblo 1.6 Multijet",
+              "Honda Civic 1.6 iES",
+              "Volkswagen Golf",
+              "Toyota Corolla",
+          ],
+      )
+
+    if st.button("Araçları Karşılaştır", use_container_width=True):
+      karsilastirma_verisi = {
+          "Özellik": [
+              "Segment",
+              "Yakıt Tipi",
+              "Kronik Risk Durumu",
+              "Parça Bulunabilirliği",
+          ],
+          arac1: [
+              "C Sınıfı / Sedan",
+              "Benzin / LPG",
+              "Orta (Subap Ayarı)",
+              "Çok Yüksek",
+          ],
+          arac2: [
+              "C Sınıfı / Sedan",
+              "Dizel / Benzin",
+              "Orta (Mekatronik/EGR)",
+              "Çok Yüksek",
+          ],
+      }
+      df_karsilastirma = pd.DataFrame(karsilastirma_verisi)
+      st.table(df_karsilastirma)
+
+  # 3. MALİYET & BAKIM TAKİP MODÜLÜ
+  elif sekme == "💰 Maliyet & Bakım Takip":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>💰 Araç Maliyet ve Periyodik Bakım Takibi</h3>
+            <p style='font-size: 14px;'>Aracınızın yakıt, bakım, sigorta ve tamir masraflarını kaydederek bütçenizi kontrol altında tutun.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.form("masraf_formu"):
+      m_arac = st.text_input("Araç Model / Plaka:")
+      m_tur = st.selectbox(
+          "Masraf Türü:",
+          ["Yakıt", "Periyodik Bakım", "Sigorta / Kasko", "Tamir / Parça", "Diğer"],
+      )
+      m_tutar = st.number_input("Tutar (TL):", min_value=0.0, step=50.0)
+      m_aciklama = st.text_area("Açıklama / Detay:")
+      m_kaydet = st.form_submit_button(
+          "Masrafı Kaydet", use_container_width=True
+      )
+
+      if m_kaydet:
+        if not m_arac.strip() or m_tutar <= 0:
+          st.error("Lütfen araç adı ve geçerli bir tutar girin!")
+        else:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "INSERT INTO arac_masraflari (kullanici, arac_model,"
+                  " masraf_turu, tutar, aciklama) VALUES (?, ?, ?, ?, ?)",
+                  (
+                      st.session_state.aktif_kullanici,
+                      m_arac.strip(),
+                      m_tur,
+                      m_tutar,
+                      m_aciklama.strip(),
+                  ),
+              )
+              conn.commit()
+            st.success("Masraf başarıyla kaydedildi!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+    st.markdown("#### 📋 Geçmiş Masraf Raporunuz")
+    try:
+      with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+        df_masraf = pd.read_sql_query(
+            "SELECT arac_model, masraf_turu, tutar, aciklama, tarih FROM"
+            " arac_masraflari WHERE kullanici = ? ORDER BY id DESC",
+            conn,
+            params=(st.session_state.aktif_kullanici,),
+        )
+        if not df_masraf.empty:
+          st.dataframe(df_masraf, use_container_width=True)
+          toplam_harcama = df_masraf["tutar"].sum()
+          st.markdown(
+              f"**Toplam Harcama:** <span"
+              f" style='color:#E06D29;font-size:18px;'>{toplam_harcama:,.2f}"
+              " TL</span>",
+              unsafe_allow_html=True,
+          )
+        else:
+          st.info("Henüz kayıtlı bir masrafınız bulunmuyor.")
+    except Exception as e:
+      st.error(f"Hata: {e}")
+
+  # 4. CANLI PİYASA & İSTATİSTİKLER (GRAFİK PANELİ)
+  elif sekme == "📊 Piyasa & İstatistikler":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>📊 Canlı Piyasalar ve Sistem İstatistik Paneli</h3>
+            <p style='font-size: 14px;'>Sistemdeki harcama dağılımları ve araç masraf analizleri grafiksel olarak aşağıda sunulmuştur.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    try:
+      with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+        df_stats = pd.read_sql_query(
+            "SELECT masraf_turu, tutar FROM arac_masraflari WHERE kullanici = ?",
+            conn,
+            params=(st.session_state.aktif_kullanici,),
+        )
+        if not df_stats.empty:
+          st.markdown("#### Masraf Türlerine Göre Dağılım")
+          grup_df = df_stats.groupby("masraf_turu")["tutar"].sum()
+          st.bar_chart(grup_df)
+        else:
+          st.info(
+              "Grafik oluşması için lütfen 'Maliyet & Bakım Takip' sekmesinden"
+              " masraf girişi yapın."
+          )
+    except Exception as e:
+      st.error(f"Hata: {e}")
+
+  # 5. OTO EKSPERTİZ KONTROL LİSTESİ (CHECKLIST)
+  elif sekme == "📝 Ekspertiz Kontrol Listesi":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>📝 Oto Ekspertiz Kontrol Listesi (Checklist)</h3>
+            <p style='font-size: 14px;'>Araç incelemesi sırasında kontrol etmeniz gereken kritik noktaları işaretleyin.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("#### 🔍 Araç Kontrol Noktaları")
+    c1, c2 = st.columns(2)
+    with c1:
+      kaporta_boya = st.checkbox(
+          "Kaporta ve Boya Kontrolü (Orijinal / Boyalı / Değişen)"
+      )
+      motor_mekanik = st.checkbox(
+          "Motor Performansı ve Yağ Kaçağı Kontrolü"
+      )
+      sanziman_testi = st.checkbox("Şanzıman / Vites Geçiş Testi")
+      alt_takim = st.checkbox("Alt Takım, Salıncak ve Amortisör Kontrolü")
+    with c2:
+      tramer_sorgu = st.checkbox("Tramer Hasar Kaydı Sorgulaması Yapıldı")
+      airbag_kontrol = st.checkbox(
+          "Airbag (Hava Yastığı) ve Emniyet Kemeri Kontrolü"
+      )
+      elektronik_Aksam = st.checkbox("Klima, Elektrik ve Aydınlatma Testi")
+      dyno_testi = st.checkbox("Dyno (Beygir Gücü) Testi")
+
+    if st.button("Ekspertiz Durumunu Özetle", use_container_width=True):
+      toplam_kontrol = 8
+      isaretlenen = sum([
+          kaporta_boya,
+          motor_mekanik,
+          sanziman_testi,
+          alt_takim,
+          tramer_sorgu,
+          airbag_kontrol,
+          elektronik_Aksam,
+          dyno_testi,
+      ])
+      basari_orani = (isaretlenen / toplam_kontrol) * 100
+
+      st.success(
+          f"Ekspertiz Tamamlanma Oranı: %{basari_orani:.0f} ({isaretlenen}/8"
+          " kriter incelendi)"
+      )
+      if basari_orani == 100:
+        st.balloons()
+        st.info(
+            "Mükemmel! Tüm kritik ekspertiz kontrolleri eksiksiz yapıldı."
+        )
+      else:
+        st.warning(
+            "Dikkat: Eksik kalan kontrol maddeleri var, aracı satın almadan"
+            " önce mutlaka tamamlayın."
+        )
+
+  # 6. ARAÇ DEĞER KAYBI & TRAMER HESAPLAMA
+  elif sekme == "🧮 Değer Kaybı & Tramer Hesapla":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>🧮 Araç Değer Kaybı ve Hasar Hesaplama Aracı</h3>
+            <p style='font-size: 14px;'>Kaza sonrası aracınızın yaklaşık piyasa değer kaybını hesaplayın.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    arac_fiyati = st.number_input(
+        "Aracın Kaza Öncesi Piyasa Değeri (TL):", min_value=0.0, step=10000.0
+    )
+    km_durumu = st.number_input(
+        "Aracın Kilometresi (KM):", min_value=0, step=5000
+    )
+    kusur_orani = st.selectbox(
+        "Kusur Oranınız (Kaza Kusuru):",
+        ["%0 (Karşı Taraf Tam Kusurlu)", "%50 (Ortak Kusur)"],
+    )
+
+    if st.button("Değer Kaybını Hesapla", use_container_width=True):
+      if arac_fiyati <= 0:
+        st.error("Lütfen geçerli bir araç fiyatı girin!")
+      else:
+        km_katsayisi = (
+            1.0 if km_durumu < 50000 else (0.8 if km_durumu < 150000 else 0.6)
+        )
+        kusur_katsayisi = 1.0 if "%0" in kusur_orani else 0.5
+        tahmini_kayip = (arac_fiyati * 0.08) * km_katsayisi * kusur_katsayisi
+
+        st.markdown(
+            f"""
+                <div class="dashboard-card" style="border-left: 6px solid #E06D29;">
+                    <h4>🧮 Tahmini Değer Kaybı Sonucu</h4>
+                    <p style='font-size: 20px; font-weight:bold; color:#E06D29;'>{tahmini_kayip:,.2f} TL</p>
+                    <p style='font-size: 12px;'>Not: Bu tutar sigorta eksperlerinin uyguladığı baz formüle göre tahmini olarak hesaplanmıştır. Kesin sonuç için resmi eksper raporu gereklidir.</p>
+                </div>
+                """,
+            unsafe_allow_html=True,
+        )
+
+  # 7. SERVİS & İSTASYON BULUCU (GPS / KONUM)
+  elif sekme == "🗺️ Servis & İstasyon Bulucu":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>🗺️ Yakın Oto Servis ve Akaryakıt İstasyonları Bulucu</h3>
+            <p style='font-size: 14px;'>Bulunduğunuz konuma veya seçtiğiniz ile göre en yakın servis ve istasyonları keşfedin.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    secilen_il = st.selectbox(
+        "Şehir / Konum Seçin:",
+        ["Ordu", "İstanbul", "Ankara", "İzmir", "Samsun", "Trabzon"],
+    )
+    isletme_turu = st.selectbox(
+        "Aranan Tesis Türü:",
+        [
+            "TSE Onaylı Oto Ekspertiz",
+            "Yetkili Servis & Tamirhane",
+            "Akaryakıt İstasyonu",
+        ],
+    )
+
+    if st.button("Konumda Ara", use_container_width=True):
+      st.success(
+          f"📍 **{secilen_il}** bölgesinde **{isletme_turu}** araması"
+          " tamamlandı:"
+      )
+      st.markdown(
+          f"""
+            - **1. Tesis:** AUTO-LAB Onaylı {secilen_il} Merkez Servisi (Puan: 4.8 ⭐)
+            - **2. Tesis:** Güven Oto Ekspertiz ve Dyno Test Merkezi (Puan: 4.7 ⭐)
+            - **3. Tesis:** Başkent Teknik Servis ve Bakım İstasyonu (Puan: 4.6 ⭐)
+            """,
+          unsafe_allow_html=True,
+      )
+
+  # 8. LASTİK & JANT EBAT KIYASLAMA ARACI
+  elif sekme == "🛞 Lastik & Jant Ebat Kıyasla":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>🛞 Lastik & Jant Ebat Uyum Kıyaslama Aracı</h3>
+            <p style='font-size: 14px;'>Yeni jant ve lastik kombinasyonunuzun orijinal ölçünüze göre çevresini ve farkını hesaplayın.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_l1, col_l2 = st.columns(2)
+    with col_l1:
+      st.markdown("#### Orijinal Lastik Ölçüsü")
+      taban_1 = st.number_input("Taban Genişliği (mm):", value=205, step=5)
+      yanak_1 = st.number_input("Yanak Oranı (%):", value=55, step=5)
+      jant_1 = st.number_input("Jant Çapı (inç):", value=16, step=1)
+    with col_l2:
+      st.markdown("#### Yeni Lastik Ölçüsü")
+      taban_2 = st.number_input("Taban Genişliği (mm) [Yeni]:", value=225, step=5)
+      yanak_2 = st.number_input("Yanak Oranı (%) [Yeni]:", value=45, step=5)
+      jant_2 = st.number_input("Jant Çapı (inç) [Yeni]:", value=17, step=1)
+
+    if st.button("Ebatları Kıyasla", use_container_width=True):
+      cap_1 = (taban_1 * (yanak_1 / 100) * 2) + (jant_1 * 25.4)
+      cap_2 = (taban_2 * (yanak_2 / 100) * 2) + (jant_2 * 25.4)
+      fark_yuzde = ((cap_2 - cap_1) / cap_1) * 100
+
+      st.markdown(
+          f"""
+            <div class="dashboard-card" style="border-left: 6px solid #00f3ff;">
+                <h4>🛞 Kıyaslama Sonucu</h4>
+                <p><b>Orijinal Çap:</b> {cap_1:.1f} mm &nbsp;|&nbsp; <b>Yeni Çap:</b> {cap_2:.1f} mm</p>
+                <p><b>Çap Farkı:</b> %{fark_yuzde:.2f}</p>
+                <p style='font-size: 12px;'>İdeal değişim aralığı genellikle %3'ün altındadır.</p>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
+
+  # 9. ŞİFREMİ GÜNCELLE
+  elif sekme == "⚙️ Şifremi Güncelle":
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>⚙ Hesap Güvenliği ve Şifre Güncelleme</h3>
+            <p style='font-size: 14px;'>Mevcut şifrenizi doğrulayarak yeni hesap şifrenizi güncelleyebilirsiniz.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    eski_sifre = st.text_input("Mevcut Şifre:", type="password")
+    yeni_sifre = st.text_input("Yeni Şifre:", type="password")
+    yeni_sifre_tekrar = st.text_input("Yeni Şifre (Tekrar):", type="password")
+
+    if st.button("Şifremi Güncelle", use_container_width=True):
+      if not eski_sifre or not yeni_sifre or not yeni_sifre_tekrar:
+        st.error("Lütfen tüm alanları doldurun!")
+      elif yeni_sifre != yeni_sifre_tekrar:
+        st.error("Yeni şifreler birbiriyle uyuşmuyor!")
+      else:
+        if st.session_state.aktif_kullanici == "ADMIN":
+          st.error("Admin şifresi bu ekrandan değiştirilemez.")
+        else:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "SELECT sifre FROM kullanicilar WHERE kullanici_adi = ?",
+                  (st.session_state.aktif_kullanici,),
+              )
+              row = cursor.fetchone()
+              if row and row[0] == sifre_hashle(eski_sifre.strip()):
+                cursor.execute(
+                    "UPDATE kullanicilar SET sifre = ? WHERE kullanici_adi = ?",
+                    (
+                        sifre_hashle(yeni_sifre.strip()),
+                        st.session_state.aktif_kullanici,
+                    ),
+                )
+                conn.commit()
+                st.success("Şifreniz başarıyla güncellendi!")
+                discorda_mesaj_gonder(
+                    f"🔐 **Şifre Güncellendi:**"
+                    f" `{st.session_state.aktif_kullanici}`"
+                )
+              else:
+                st.error("Mevcut şifreniz hatalı!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+  # 10. ADMIN PANELİ
+  elif sekme == "🛡️ Admin Paneli" and st.session_state.is_admin:
+    st.markdown(
+        """
+        <div class="dashboard-card">
+            <h3>🛡️ Yönetici Kontrol Paneli</h3>
+            <p style='font-size: 14px;'>Duyuru yayınlayabilir, kullanıcıların işlem haklarını (kredilerini) düzenleyebilir ve sistem loglarını inceleyebilirsiniz.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tab_duyuru, tab_kullanicilar, tab_loglar = st.tabs(
+        ["📢 Duyuru Yayınla", "👥 Kullanıcı Yönetimi", "📋 Sistem Logları"]
+    )
+
+    with tab_duyuru:
+      st.markdown("#### Yeni Duyuru Ekle")
+      duyuru_metni = st.text_area("Duyuru İçeriği:")
+      if st.button("Duyuruyu Yayınla", use_container_width=True):
+        if duyuru_metni.strip():
+          try:
+            simdi = datetime.now()
+            bitis = simdi + timedelta(minutes=10)
+            bitis_str = bitis.strftime("%Y-%m-%d %H:%M:%S")
+
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "INSERT INTO announcements (message, bitis_tarihi) VALUES"
+                  " (?, ?)",
+                  (duyuru_metni.strip(), bitis_str),
+              )
+              conn.commit()
+            st.success("Duyuru yayınlandı!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+    with tab_kullanicilar:
+      st.markdown("#### Kayıtlı Tüm Üyeler ve İşlem Hakları")
+      try:
+        with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+          df_kullanicilar = pd.read_sql_query(
+              "SELECT id, ad, soyad, eposta, kullanici_adi, is_banned,"
+              " islem_hakki, kayit_tarihi FROM kullanicilar",
+              conn,
+          )
+          st.dataframe(df_kullanicilar, use_container_width=True)
+      except Exception as e:
+        st.error(f"Hata: {e}")
+
+    with tab_loglar:
+      st.markdown("#### Son Giriş ve İşlem Logları")
+      try:
+        with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+          df_loglar = pd.read_sql_query(
+              "SELECT * FROM giris_loglari ORDER BY id DESC LIMIT 50", conn
+          )
+          st.dataframe(df_loglar, use_container_width=True)
+      except Exception as e:
+        st.error(f"Hata: {e}")
