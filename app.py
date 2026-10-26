@@ -343,4 +343,233 @@ st.markdown(
 
 
 def sifre_hashle(sifre):
-  return hashlib.
+  return hashlib.sha256(sifre.encode("utf-8")).hexdigest()
+
+
+def giris_kaydi_ekle(kullanici_adi, islem_tipi):
+  try:
+    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+      cursor = conn.cursor()
+      cursor.execute(
+          "INSERT INTO giris_loglari (kullanici_adi, islem_tipi) VALUES (?, ?)",
+          (kullanici_adi, islem_tipi),
+      )
+      conn.commit()
+  except Exception:
+    pass
+
+
+# Session State Tanımları
+if "aktif_kullanici" not in st.session_state:
+  st.session_state.aktif_kullanici = None
+
+if "giris_yapildi" not in st.session_state:
+  st.session_state.giris_yapildi = False
+
+if "is_admin" not in st.session_state:
+  st.session_state.is_admin = False
+
+# Veritabanı Tablolarını Oluşturma ve Migrasyon
+try:
+  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS kullanicilar (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, ad TEXT, soyad TEXT, eposta TEXT, eposta_sifre TEXT,"
+        " kullanici_adi TEXT UNIQUE, sifre TEXT, is_banned INTEGER DEFAULT 0,"
+        " islem_hakki INTEGER DEFAULT 20, kayit_tarihi TIMESTAMP DEFAULT"
+        " CURRENT_TIMESTAMP)"
+    )
+
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS arama_gecmisi (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, kullanici TEXT, aranan_kelime TEXT,"
+        " bulunan_sonuc_sayisi INTEGER, tarih TIMESTAMP DEFAULT"
+        " CURRENT_TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS giris_loglari (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, kullanici_adi TEXT, islem_tipi TEXT, tarih TIMESTAMP"
+        " DEFAULT CURRENT_TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS announcements (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, message TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+        " bitis_tarihi TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS araba_analizleri (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, kullanici TEXT, arac_bilgisi TEXT, butce_amac TEXT,"
+        " analiz_sonucu TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS arac_masraflari (id INTEGER PRIMARY KEY"
+        " AUTOINCREMENT, kullanici TEXT, arac_model TEXT, masraf_turu TEXT,"
+        " tutar REAL, aciklama TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    )
+
+    cursor.execute("PRAGMA table_info(kullanicilar)")
+    kullanici_sutunlari = [sutun[1] for sutun in cursor.fetchall()]
+    if "islem_hakki" not in kullanici_sutunlari:
+      cursor.execute(
+          "ALTER TABLE kullanicilar ADD COLUMN islem_hakki INTEGER DEFAULT 20"
+      )
+
+    conn.commit()
+except Exception as e:
+  st.error(f"DB Migrasyon Hatası: {e}")
+
+# --- SÜRESİ DOLAN DUYURULARI TEMİZLE ---
+try:
+  with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+    cursor = conn.cursor()
+    simdi = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("DELETE FROM announcements WHERE bitis_tarihi < ?", (simdi,))
+    conn.commit()
+except Exception:
+  pass
+
+# --- SİDEBAR & RENK PALETİ SEÇİCİ ---
+st.sidebar.markdown(
+    f"<h2 style='text-align: center; color: {aktif_palet['btn_1']};"
+    " font-weight:700;'><span style='font-size: 28px;'>🚗</span> AUTO-LAB"
+    " PRO</h2>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown(
+    "<p style='text-align: center; font-size: 13px; margin-top:"
+    " -10px;'>Otomotiv & Yönetim Ekosistemi</p>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown("---")
+
+yeni_secim = st.sidebar.selectbox(
+    "🎨 Renk Kombinasyonu Seç:",
+    list(PALETLER.keys()),
+    index=list(PALETLER.keys()).index(st.session_state.secilen_tema),
+)
+if yeni_secim != st.session_state.secilen_tema:
+  st.session_state.secilen_tema = yeni_secim
+  st.rerun()
+
+st.sidebar.markdown("---")
+
+wa_mesaj = "Selam, AUTO-LAB Pro uygulaması şifremi unuttum. Yardımcı olur musun?"
+wa_link = f"https://wa.me/{WHATSAPP_NUMARASI}?text={requests.utils.quote(wa_mesaj)}"
+st.sidebar.markdown(
+    f'<a href="{wa_link}" target="_blank"><button'
+    " style='background: linear-gradient(135deg, #059669, #10b981); color:white;"
+    " border:none; padding:10px 15px; border-radius:12px; font-weight:600;"
+    " cursor:pointer; width:100%; box-shadow: 0 4px 15px rgba(16, 185, 129,"
+    " 0.35);'>💬 WhatsApp Destek Hattı</button></a>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown("---")
+
+# --- GİRİŞ / KAYIT / ŞİFRE SIFIRLAMA EKRANI ---
+if not st.session_state.giris_yapildi:
+  st.markdown(
+      "<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB"
+      " Pro'ya Hoş Geldiniz</h1><p>Devam etmek için lütfen giriş yapın, hesap"
+      " oluşturun veya şifrenizi sıfırlayın.</p></div>",
+      unsafe_allow_html=True,
+  )
+
+  col_bos1, col_form, col_bos2 = st.columns([1, 1.4, 1])
+  with col_form:
+    tab_giris, tab_kayit, tab_sifre_sifirla = st.tabs(
+        ["🔑 Giriş Yap", "📝 Hesap Oluştur", "🔄 Şifre Sıfırla"]
+    )
+
+    with tab_giris:
+      st.markdown("<br>", unsafe_allow_html=True)
+      g_kullanici = st.text_input("Kullanıcı Adı:", key="giris_kadi")
+      g_sifre = st.text_input("Şifre:", type="password", key="giris_sifre")
+
+      st.markdown("<br>", unsafe_allow_html=True)
+      if st.button("Sisteme Giriş Yap", use_container_width=True):
+        girilen_kadi = g_kullanici.strip()
+        girilen_sifre = g_sifre.strip()
+
+        if girilen_kadi.upper() in ["ADMIN", "ADMİN"] and girilen_sifre in [
+            "ADMIN",
+            "ADMİN",
+        ]:
+          st.session_state.aktif_kullanici = "ADMIN"
+          st.session_state.is_admin = True
+          st.session_state.giris_yapildi = True
+          giris_kaydi_ekle("ADMIN", "Admin Girişi Yaptı")
+          discorda_mesaj_gonder(
+              "🛡️ **Admin Girişi:** `ADMIN` sisteme normal giriş ekranından"
+              " yönetici olarak giriş yaptı."
+          )
+          st.success("Yönetici girişi başarılı!")
+          st.rerun()
+        else:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "SELECT ad, soyad, eposta, eposta_sifre, sifre,"
+                  " is_banned, islem_hakki FROM kullanicilar WHERE"
+                  " kullanici_adi = ?",
+                  (girilen_kadi,),
+              )
+              row = cursor.fetchone()
+              if row and row[4] == sifre_hashle(girilen_sifre):
+                if row[5] == 1:
+                  st.error("⚠ Bu hesap yasaklanmıştır!")
+                else:
+                  st.session_state.aktif_kullanici = girilen_kadi
+                  st.session_state.is_admin = False
+                  st.session_state.giris_yapildi = True
+                  giris_kaydi_ekle(girilen_kadi, "Sisteme Giriş Yaptı")
+                  discorda_mesaj_gonder(
+                      f"🔑 **Başarılı Giriş:** `{girilen_kadi}`"
+                  )
+                  st.success("Giriş başarılı!")
+                  st.rerun()
+              else:
+                st.error("Kullanıcı adı veya şifre hatalı!")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+    with tab_kayit:
+      st.markdown("<br>", unsafe_allow_html=True)
+      k_ad = st.text_input("Ad:")
+      k_soyad = st.text_input("Soyad:")
+      k_eposta = st.text_input("E-posta Adresi:")
+      k_eposta_sifre = st.text_input(
+          "E-posta Şifreniz:", type="password", key="kayit_eposta_sifre"
+      )
+      k_kadi = st.text_input("Kullanıcı Adı Seçin:")
+      k_sifre = st.text_input(
+          "Uygulama Şifreniz:", type="password", key="kayit_uygulama_sifre"
+      )
+
+      st.markdown("<br>", unsafe_allow_html=True)
+      if st.button("Kayıt Ol", use_container_width=True):
+        if not k_kadi.strip() or not k_sifre.strip() or not k_eposta.strip():
+          st.error("Kullanıcı adı, şifre ve e-posta zorunludur!")
+        else:
+          try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+              cursor = conn.cursor()
+              cursor.execute(
+                  "INSERT INTO kullanicilar (ad, soyad, eposta, eposta_sifre,"
+                  " kullanici_adi, sifre, islem_hakki) VALUES (?, ?, ?, ?, ?,"
+                  " ?, 20)",
+                  (
+                      k_ad.strip(),
+                      k_soyad.strip(),
+                      k_eposta.strip(),
+                      k_eposta_sifre.strip(),
+                      k_kadi.strip(),
+                      sifre_hashle(k_sifre.strip()),
+                  ),
+              )
+              conn.commit()
+
+            discorda_mesaj_gonder(
+                f"📝 **Yeni Kayıt:** `{k_kadi.strip()}` ({k_ad} {k_soyad})"
