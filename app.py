@@ -573,3 +573,10 @@ if not st.session_state.giris_yapildi:
 
             discorda_mesaj_gonder(
                 f"📝 **Yeni Kayıt:** `{k_kadi.strip()}` ({k_ad} {k_soyad})"
+            )
+            st.success("Kayıt başarılı! Şimdi giriş yapabilirsiniz.")
+          except Exception as e:
+            st.error(f"Hata: {e}")
+
+    with tab_sifre_sifirla:
+      st.markdown("<br>", unsafe_allow_html
