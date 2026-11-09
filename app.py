@@ -36,7 +36,7 @@ except Exception:
 
 # --- STREAMLIT SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="AUTO-LAB Pro - Complete Automotive Intelligence & Fault Diagnosis System", page_icon="🚗", layout="wide"
+    page_title="AUTO-LAB Pro - Advanced Automotive Fault Diagnosis System", page_icon="🚗", layout="wide"
 )
 
 # --- TELEFON VE YEREL AĞ / PWA META AYARLARI ---
@@ -135,100 +135,153 @@ class CarBuyingExpertAI:
 - **Genel Puan:** <span style='font-size:20px; font-weight:bold; color:#E06D29;'>{puan} / 100</span>
 - **Son Karar:** **{karar}**"""
 
-# --- ULTIMATE AUTOMOTIVE AI – COMPLETE VEHICLE FAULT DIAGNOSIS DATABASE ---
+# --- ADVANCED AUTOMOTIVE DIAGNOSTIC AI (KOMPLE İLERİ SEVİYE ARIZA VERİTABANI) ---
 class AutomotiveDiagnosticAI:
     @staticmethod
     def ariza_teshis_et(sikayet_metni):
         sorgu = sikayet_metni.lower().strip()
         
-        if "p0300" in sorgu or "tekleme" in sorgu or "silkeleme" in sorgu or "p0301" in sorgu:
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Genel / Çoklu Silindirli Benzinli veya Dizel Üniteler
-- **ARIZA:** Rastgele veya silindir bazlı motor teklemesi / sarsıntılı çalışma (Örn: P0300 / P0301)
-- **OLASI NEDENLER:**
-  1. Ateşleme bobinlerinde delinme veya zayıflama (Mekanik/Elektronik).
-  2. Bujilerin ömrünü tamamlaması veya tırnak aralığının açılması.
-  3. Yakıt enjektörlerinde tıkanıklık, püskürtme bozukluğu veya geri dönüş kaçağı.
-  4. Silindir kompresyon kaybı veya subap sızdırması.
-- **BELİRTİLER:** Egzozdan patırtılı ses, motor arıza lambasının yanıp sönmesi, çekişte düşüş, rölantide titreme.
-- **KONTROL EDİLECEK PARÇALAR:** Bujiler, bobinler, enjektörler, kompresyon basıncı.
-- **TEŞHİS:** OBD2 canlı veri okuma, bobin ve buji yer değiştirme testi, silindir kompresyon ölçümü.
-- **ÇÖZÜM:** Arızalı bobin/buji değişim seti, enjektör temizliği veya revizyonu.
-- **MALİYET:** Parça: 1.500₺ - 6.000₺ | İşçilik: 500₺ - 1.500₺ | Tahmini Toplam: 2.000₺ - 7.500₺ (Güncel piyasa ortalaması)
-- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK (Katalitik konventöre ve motora zarar verebilir)</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde kısa mesafede servise gitmeli, uzun yola çıkılmamalıdır.
-- **SONUÇ:** Önce ateşleme sistemi (buji/bobin) kontrol edilmeli, sorun çözülmezse yakıt sistemi incelenmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "p0299" in sorgu or "turbo" in sorgu or "basınç" in sorgu or "çekişten düş" in sorgu:
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Turbo Beslemeli Benzinli / Dizel Motorlar
-- **ARIZA:** Turbo basıncı düşük (P0299) veya çekiş düşüklüğü.
-- **OLASI NEDENLER:**
-  1. Intercooler (hava soğutucu) hortumlarında yırtık, delik veya kelepçe kaçağı.
-  2. N75 turbo basınç regülatör valfi arızası veya hortum tıkanıklığı.
-  3. Turbo mili aşırı boşluğu, sıkışması veya değişken geometri (VTG) kurum bağlanması.
-  4. MAP / Basınç sensörü arızası.
-- **BELİRTİLER:** Yokuşlarda çekişten düşme, gaza basınca ıslık/fısıltı sesi, yüksek devirlere çıkmada zorlanma.
-- **KONTROL EDİLECEK PARÇALAR:** Turbo hortumları, intercooler peteği, N75 valfi, turbo mili.
-- **TEŞHİS:** Duman testi (kaçak için), OBD2 canlı veri (Desired vs Actual Boost Pressure) analizi.
-- **ÇÖZÜM:** Kaçak hortum değişimi, N75 valf değişimi veya turbo revizyonu.
-- **MALİYET:** Parça: 1.000₺ - 15.000₺ | İşçilik: 1.000₺ - 4.000₺ | Tahmini Toplam: 2.000₺ - 19.000₺
-- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
-- **SONUÇ:** İlk olarak hortumlar ve intercooler gözle ve basınçla kontrol edilmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "hararet" in sorgu or "su eksiltiyor" in sorgu or "conta" in sorgu or "radyatör" in sorgu:
+        if "sabah" in sorgu and ("çalışmıyor" in sorgu or "geç" in sorgu):
             return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
 - **ARAÇ:** Tüm İçten Yanmalı Motorlar
-- **ARIZA:** Motor hararet yapması veya soğutma suyu eksiltmesi.
+- **ARIZA:** Araç yalnızca sabahları / soğukta çalışmıyor veya geç çalışıyor.
 - **OLASI NEDENLER:**
-  1. Silindir kapak contasının yanması veya çatlaması.
-  2. Termostatın açık/kapalı kalması veya devridaim (su pompası) arızası.
-  3. Radyatör delinmesi veya fan müşürü/motoru arızası.
-  4. Soğutma hortumlarında kaçak veya genleşme kapağı arızası.
-- **BELİRTİLER:** Hararet ibresinin kırmızı bölgeye yaklaşması, antifriz kabında yağlanma veya köpürme, egzozdan beyaz duman, kaloriferin ısıtmaması.
-- **KONTROL EDİLECEK PARÇALAR:** Kapak contası, termostat, radyatör, devirdaim, fan.
-- **TEŞHİS:** Soğutma sistemi basınç testi, CO2 kaçak testi (antifrizde egzoz gazı testi).
-- **ÇÖZÜM:** Kapak contası değişimi ve rektefiye, termostat/devirdaim değişimi, radyatör onarımı.
-- **MALİYET:** Parça: 2.000₺ - 15.000₺ | İşçilik: 3.000₺ - 15.000₺ | Tahmini Toplam: 5.000₺ - 30.000₺
-- **CİDDİYET:** <span style='color: #ef4444; font-weight: bold;'>KRİTİK</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** <span style='color: #ef4444; font-weight: bold;'>ASLA KULLANILMAMALI (Motor bloğu eğilebilir veya yatak sarabilir!).</span>
-- **SONUÇ:** Araç derhal durdurulmalı, çekici ile servise sevk edilmelidir.
+  1. Kızdırma bujisi (dizel) veya ateşleme bujisi arızası.
+  2. Yakıt geri dönüş kaçağı / enjektörlerin mazotu depoya geri kaçırması.
+  3. Akünün soğukta marş gücünü (CCA) yitirmesi.
+  4. Yakıt basınç regülatörü veya düşük ray basıncı.
+- **BELİRTİLER:** Marş uzun süre dönüyor, motor sarsıntılı çalışıyor, ilk çalışmada beyaz/gri duman atıyor.
+- **KONTROL EDİLECEK PARÇALAR:** Kızdırma/ateşleme bujileri, enjektör geri dönüş testi, akü CCA testi, yakıt pompası.
+- **TEŞHİS:** Sabah ilk çalıştırmadan önce yakıt hattı basınç kontrolü, enjektör test tezgahı.
+- **ÇÖZÜM:** Bujilerin veya enjektör keçelerinin/valflerinin yenilenmesi.
+- **MALİYET:** Parça: 1.000₺ - 10.000₺ | İşçilik: 500₺ - 3.000₺ | Tahmini Toplam: 1.500₺ - 13.000₺
+- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde çalıştırılıp servise gidilebilir.
+- **SONUÇ:** İlk olarak akü ve kızdırma/ateşleme sistemi kontrol edilmelidir.
 - **GÜVEN DÜZEYİ:** Yüksek"""
 
-        elif "marş" in sorgu or "çalışmıyor" in sorgu or "akü" in sorgu or "marş basmıyor" in sorgu:
+        elif "2000" in sorgu or "devir" in sorgu or "çekişten düş" in sorgu or "yokuş" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Turbo Beslemeli / Emme Sistemli Araçlar
+- **ARIZA:** Araç 2.000 devirden sonra çekişten düşüyor / yokuşta güç kaybı yaşanıyor.
+- **OLASI NEDENLER:**
+  1. Turbo basınç kontrol solenoidi (N75) arızası veya hortum kaçağı.
+  2. MAF (Hava Akış) sensörü kirlenmesi veya arızası.
+  3. DPF (Partikül Filtresi) tıkalı veya egzoz karşı basıncı yüksek.
+  4. Emme manifoldu klape (Swirl Flap) mekanizması sıkışması.
+- **BELİRTİLER:** Düz yolda normal giden aracın yokuşta bayılması, gaz pedalına tepkinin gecikmesi.
+- **KONTROL EDİLECEK PARÇALAR:** Turbo hortumları, MAF sensörü, DPF doluluk oranı, EGR valfi.
+- **TEŞHİS:** OBD2 canlı veri (Live Data) ile istenen vs. okunan turbo basıncı ve MAF değerlerinin kıyaslanması.
+- **ÇÖZÜM:** Hortum değişimi, MAF temizliği / değişimi, DPF rejenerasyonu veya temizliği.
+- **MALİYET:** Parça: 500₺ - 12.000₺ | İşçilik: 500₺ - 2.500₺ | Tahmini Toplam: 1.000₺ - 14.500₺
+- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde kullanılabilir ancak uzun yolda zorlanabilir.
+- **SONUÇ:** MAF sensörü ve turbo hortumları öncelikli kontrol edilmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "klima" in sorgu and "titre" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Klimalı Araçlar
+- **ARIZA:** Klima açıldığında motor titreşimi artıyor veya rölanti sarsılıyor.
+- **OLASI NEDENLER:**
+  2. Motor kulaklarında (takozlarında) eskime ve sertleşme.
+  3. Klima kompresörünün aşırı yük bindirmesi / bilya sarması.
+  4. Rölanti dengeleyici (IAC) valf veya ECU rölanti telafi haritası sorunu.
+- **BELİRTİLER:** Klima tuşuna basıldığı an direksiyonda ve kabinde hissedilen ani sarsıntı.
+- **KONTROL EDİLECEK PARÇALAR:** Motor kulakları, klima kompresörü, rölanti motoru.
+- **TEŞHİS:** Fiziki motor takozu kontrolü, klima kompresör kasnak boşluğu testi.
+- **ÇÖZÜM:** Motor kulaklarının değişimi veya kompresör revizyonu.
+- **MALİYET:** Parça: 2.000₺ - 8.000₺ | İşçilik: 1.000₺ - 2.500₺ | Tahmini Toplam: 3.000₺ - 10.500₺
+- **CİDDİYET:** Orta
+- **ARACI KULLANMAYA DEVAM ETMEK:** Güvenli (konfor kaybı yaratır).
+- **SONUÇ:** Motor kulakları ilk incelenecek noktadır.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "direksiyon" in sorgu and ("ses" in sorgu or "tam" in sorgu):
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Hidrolik veya EPS Direksiyon Sistemleri
+- **ARIZA:** Direksiyon sonuna kadar (tam) çevrildiğinde gelen uğultu veya sürtünme sesi.
+- **OLASI NEDENLER:**
+  1. Hidrolik direksiyon pompası basınç valfi veya yağ eksikliği.
+  2. Direksiyon kayışının (V kayışı) gevşek olması veya sıyırması.
+  3. EPS (Elektrikli Direksiyon) mekanik dişli aşınması.
+- **BELİRTİLER:** Park manevralarında veya tam tur dönüşlerde "uğ, vınn" şeklinde ses gelmesi.
+- **KONTROL EDİLECEK PARÇALAR:** Direksiyon hidrolik yağı, V kayışı, direksiyon kutusu.
+- **TEŞHİS:** Hidrolik kazanında yağ seviyesi ve köpürme kontrolü.
+- **ÇÖZÜM:** Hidrolik yağı tamamlama / değişimi, V kayışı gergi bilyası değişimi.
+- **MALİYET:** Parça: 400₺ - 3.000₺ | İşçilik: 300₺ - 1.000₺ | Tahmini Toplam: 700₺ - 4.000₺
+- **CİDDİYET:** Orta
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde kullanılabilir.
+- **SONUÇ:** Direksiyon yağı ve kayış gerginliği kontrol edilmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "fren" in sorgu and "sağ" in sorgu or "sola çek" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Hidrolik Fren Sistemleri
+- **ARIZA:** Fren yapıldığında aracın sağa veya sola çekmesi.
+- **OLASI NEDENLER:**
+  1. Fren kaliper pistonunun sıkışması veya paslanması (bir taraf tutuyor, diğeri tutmuyor).
+  2. Fren hortumunun içten şişmesi ve basıncı tutması.
+  3. Disk veya balatalarda düzensiz aşınma / yağ bulaşması.
+- **BELİRTİLER:** Fren pedalına basıldığında direksiyonun sertçe bir tarafa kırmak istemesi.
+- **KONTROL EDİLECEK PARÇALAR:** Fren kaliperleri, fren hortumları, balatalar, diskler.
+- **TEŞHİS:** Lift üzerinde tekerlek serbestlik testi, fren sıcaklık kontrolü (kampana/disk ısı farkı).
+- **ÇÖZÜM:** Kaliper piston revizyonu, fren hortumu değişimi, balata/disk takımı değişimi.
+- **MALİYET:** Parça: 1.000₺ - 5.000₺ | İşçilik: 800₺ - 2.000₺ | Tahmini Toplam: 1.800₺ - 7.000₺
+- **CİDDİYET:** <span style='color: #ef4444; font-weight: bold;'>KRİTİK (Fren güvenliğini doğrudan etkiler!)</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** <span style='color: #ef4444; font-weight: bold;'>Kullanılmamalı, acilen servise gitmeli.</span>
+- **SONUÇ:** Fren sistemi hayati önem taşır, kaliperler derhal kontrol edilmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "akü" in sorgu and "boşal" in sorgu or "gece" in sorgu:
             return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
 - **ARAÇ:** Tüm Araçlar
-- **ARIZA:** Motorun hiç çalışmaması veya marş basmaması.
+- **ARIZA:** Akü gece boyunca boşalıyor / Kaçak akım problemi.
 - **OLASI NEDENLER:**
-  1. Akü voltajının düşmesi veya akü kutup başı oksitlenmesi.
-  2. Marş motoru kömürlerinin aşınması veya marş otomatiği arızası.
-  3. Kontak arızası veya immobilizer (anahtar tanıma) sorunu.
-  4. Yakıt pompası arızası veya sigorta atması.
-- **BELİRTİLER:** Anahtarı çevirince 'tık' sesi gelmesi, göstergelerin sönmesi veya hiç ses çıkmaması.
-- **KONTROL EDİLECEK PARÇALAR:** Akü, marş motoru, sigorta kutusu, anahtar/immobilizer.
-- **TEŞHİS:** Multimetre ile akü voltaj ölçümü (12.4V altı zayıf akü), marş çekiş testi.
-- **ÇÖZÜM:** Akü şarjı / değişimi, marş motoru revizyonu, sigorta değişimi.
-- **MALİYET:** Parça: 500₺ - 6.000₺ | İşçilik: 300₺ - 1.500₺ | Tahmini Toplam: 800₺ - 7.500₺
+  1. Torpido, bagaj veya kapı lambalarının sönmeyerek açık kalması.
+  2. Sonradan takılan multimedya, alarm veya amfi sistemlerinin uyku moduna (sleep mode) geçmemesi.
+  3. Alternatör diyot arızası (akıma geri kaçak yapması).
+- **BELİRTİLER:** Sabah aracı çalıştırmak istediğinizde hiç elektrik olmaması, akünün tamamen bitmesi.
+- **KONTROL EDİLECEK PARÇALAR:** Multimedya sistemi, sigortalar, alternatör diyot tablası, lamba anahtarları.
+- **TEŞHİS:** Multimetre ile ampermetre modunda kaçak akü testi (Parasitic Drain Test).
+- **ÇÖZÜM:** Kaçak yapan sigortanın tespiti, röle veya ses sisteminin düzeltilmesi.
+- **MALİYET:** Parça: 500₺ - 4.000₺ | İşçilik: 500₺ - 2.000₺ | Tahmini Toplam: 1.000₺ - 6.000₺
 - **CİDDİYET:** Orta
-- **ARACI KULLANMAYA DEVAM ETMEK:** Araç çalışmadığı için kullanılamaz. Takviye veya çekici gerekir.
-- **SONUÇ:** İlk olarak akü ve kutup başları kontrol edilmelidir.
+- **ARACI KULLANMAYA DEVAM ETMEK:** Her gün akü takviyesi gerektireceği için seyahat riskilidir.
+- **SONUÇ:** Sigorta kutusundan tek tek çekilerek kaçak akım çeken devre bulunmalıdır.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "p0300" in sorgu or "tekleme" in sorgu or "silkeleme" in sorgu or "p0301" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Benzinli / Dizel Motorlar
+- **ARIZA:** Motor silindir teklemesi / yük altında silkeleme (P0300).
+- **OLASI NEDENLER:**
+  1. Ateşleme bobinlerinde delinme veya zayıflama.
+  2. Bujilerin ömrünü tamamlaması veya tırnak aralığının açılması.
+  3. Yakıt enjektörlerinde tıkanıklık veya püskürtme bozukluğu.
+  4. Kompresyon kaybı veya subap sızdırması.
+- **BELİRTİLER:** Egzozdan patırtılı ses, motor arıza lambasının yanıp sönmesi, çekişte düşüş.
+- **KONTROL EDİLECEK PARÇALAR:** Bujiler, bobinler, enjektörler, kompresyon basıncı.
+- **TEŞHİS:** OBD2 canlı veri okuma, silindir kompresyon ölçümü.
+- **ÇÖZÜM:** Arızalı bobin/buji değişimi, enjektör temizliği veya revizyonu.
+- **MALİYET:** Parça: 1.500₺ - 6.000₺ | İşçilik: 500₺ - 1.500₺ | Tahmini Toplam: 2.000₺ - 7.500₺
+- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
+- **SONUÇ:** Ateşleme sistemi öncelikli kontrol edilmelidir.
 - **GÜVEN DÜZEYİ:** Yüksek"""
 
         else:
             return f"""**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Genel Arıza Teşhis Modülü
+- **ARAÇ:** Gelişmiş Arıza Teşhis Modülü
 - **ARIZA:** '{sikayet_metni}'
 - **OLASI NEDENLER:**
-  1. Sensör kirlenmesi veya soket oksitlenmesi (Elektronik).
-  2. Periyodik bakım gecikmesi veya filtre tıkanıklığı (Mekanik).
-  3. Yakıt kalitesi veya tesisat kopuklukları.
-- **BELİRTİLER:** Gösterge panelinde arıza lambası, düzensiz çalışma veya performans kaybı.
-- **KONTROL EDİLECEK PARÇALAR:** İlgili sensörler, sigortalar, kablo demetleri.
-- **TEŞHİS:** OBD2 bilgisayarlı arıza tespiti (DTC kod okuma) ve canlı veri incelemesi.
-- **ÇÖZÜM:** Uzman servis fiziki kontrolü, parça onarımı veya değişimi.
+  1. Sensör iletişim kopukluğu veya soket oksitlenmesi.
+  2. Mekanik aşınma veya periyodik bakım eksikliği.
+  3. Modüller arası yazılım veya CAN Bus uyumsuzluğu.
+- **BELİRTİLER:** Gösterge panelinde uyarı ışıkları, performans dalgalanması.
+- **KONTROL EDİLECEK PARÇALAR:** İlgili sensörler, sigortalar, kontrol üniteleri.
+- **TEŞHİS:** Kapsamlı OBD2 bilgisayarlı arıza tespiti ve canlı veri (Live Data) analizi.
+- **ÇÖZÜM:** Uzman servis fiziki kontrolü, parça onarımı veya yazılım kalibrasyonu.
 - **MALİYET:** Teşhis sonrasına bağlı olarak değişir.
 - **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>ORTA / KONTROL EDİLMELİ</span>
 - **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
@@ -297,7 +350,7 @@ try:
 except Exception: pass
 
 st.sidebar.markdown(f"<h2 style='text-align: center; color: {aktif_palet['btn_1']}; font-weight:700;'><span style='font-size: 28px;'>🚗</span> AUTO-LAB PRO AI</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px;'>Complete Fault Diagnosis System</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px;'>Advanced Fault Diagnosis System</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 yeni_secim = st.sidebar.selectbox("🎨 Renk Kombinasyonu Seç:", list(PALETLER.keys()), index=list(PALETLER.keys()).index(st.session_state.secilen_tema))
@@ -312,7 +365,7 @@ st.sidebar.markdown(f'<a href="{wa_link}" target="_blank"><button style="backgro
 st.sidebar.markdown("---")
 
 if not st.session_state.giris_yapildi:
-    st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB Pro - Fault Diagnosis System</h1><p>Devam etmek için giriş yapın veya hesap oluşturun.</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB Pro - Advanced Fault Diagnosis</h1><p>Devam etmek için giriş yapın veya hesap oluşturun.</p></div>", unsafe_allow_html=True)
     col_bos1, col_form, col_bos2 = st.columns([1, 1.4, 1])
     with col_form:
         tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Hesap Oluştur"])
@@ -365,7 +418,7 @@ if not st.session_state.giris_yapildi:
 else:
     col_b1, col_b2 = st.columns([4, 1])
     with col_b1:
-        st.title("🚗 AUTO-LAB Pro - Complete Fault Diagnosis System")
+        st.title("🚗 AUTO-LAB Pro - Advanced Fault Diagnosis System")
         rol = "🛡️ Sistem Yöneticisi" if st.session_state.is_admin else "👤 Standart Üye"
         st.markdown(f"Aktif Oturum: **{st.session_state.aktif_kullanici}** &nbsp; <span class='user-badge'>{rol}</span>", unsafe_allow_html=True)
     with col_b2:
@@ -379,7 +432,7 @@ else:
     st.markdown("<br>", unsafe_allow_html=True)
 
     base_menu = [
-        "🔍 Komple Arıza Teşhis & Arama Motoru",
+        "🔍 İleri Seviye Arıza Teşhis & Arama Motoru",
         "⚙️ Engine Expert AI – Motor ve Revizyon Analizi",
         "🏷️ Car Buying Expert AI – Profesyonel Satın Alma Eksperi",
         "🔧 Automotive Diagnostic AI – Profesyonel Arıza Tespit Merkezi",
@@ -397,16 +450,16 @@ else:
     menu_listesi = base_menu + (["🛡️ Admin Paneli"] if st.session_state.is_admin else [])
     sekme = st.sidebar.radio("📌 Navigasyon Menüsü", menu_listesi)
 
-    if sekme == "🔍 Komple Arıza Teşhis & Arama Motoru":
+    if sekme == "🔍 İleri Seviye Arıza Teşhis & Arama Motoru":
         st.markdown("""
             <div class="dashboard-card">
-                <h3>🔍 Komple Otomotiv Arıza Teşhis Veritabanı</h3>
-                <p style='font-size: 14px;'>Motor mekanik, dizel/benzinli, turbo, şanzıman, soğutma, elektrik, sensörler, OBD2 kodları, fren, süspansiyon ve klima arızalarını buraya yazarak profesyonel arıza raporu alabilirsin.</p>
+                <h3>🔍 İleri Seviye Otomotiv Arıza Teşhis Veritabanı</h3>
+                <p style='font-size: 14px;'>Mekanik, yakıt, turbo, egzoz, şanzıman, elektronik, ABS/ESP, direksiyon, klima, hibrit ve özel sürüş şikayetlerini (örn: <i>"sabahları çalışmıyor"</i>, <i>"2000 devirden sonra çekişten düşüyor"</i>, <i>"klima açınca titretiyor"</i>) yazarak profesyonel uzman raporu alabilirsin.</p>
             </div>
         """, unsafe_allow_html=True)
         
-        ariza_girdisi = st.text_area("Arıza belirtisini, sesini veya OBD2 kodunu yazın:", placeholder="Örn: P0300 arıza kodu, motor hararet yapıyor, marş basmıyor...")
-        if st.button("🔍 Profesyonel Teşhis Raporu Oluştur", use_container_width=True):
+        ariza_girdisi = st.text_area("Arıza belirtisini, şikayetinizi veya özel durumu yazın:", placeholder="Örn: Araç sabahları geç çalışıyor veya yokuşta güç kaybı yaşıyor...")
+        if st.button("🔍 Gelişmiş Teşhis Raporu Oluştur", use_container_width=True):
             if ariza_girdisi.strip():
                 rapor = AutomotiveDiagnosticAI.ariza_teshis_et(ariza_girdisi)
                 st.markdown(f"<div class='dashboard-card'>{rapor.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
