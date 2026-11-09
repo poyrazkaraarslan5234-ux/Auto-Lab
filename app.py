@@ -36,7 +36,7 @@ except Exception:
 
 # --- STREAMLIT SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="AUTO-LAB Pro - Ultimate Automotive Intelligence System", page_icon="🚗", layout="wide"
+    page_title="AUTO-LAB Pro - Complete Automotive Intelligence & Fault Diagnosis System", page_icon="🚗", layout="wide"
 )
 
 # --- TELEFON VE YEREL AĞ / PWA META AYARLARI ---
@@ -135,30 +135,111 @@ class CarBuyingExpertAI:
 - **Genel Puan:** <span style='font-size:20px; font-weight:bold; color:#E06D29;'>{puan} / 100</span>
 - **Son Karar:** **{karar}**"""
 
-# --- AUTOMOTIVE DIAGNOSTIC AI ---
+# --- ULTIMATE AUTOMOTIVE AI – COMPLETE VEHICLE FAULT DIAGNOSIS DATABASE ---
 class AutomotiveDiagnosticAI:
     @staticmethod
-    def ariza_teshis_et(marka, model, yil, motor, yakit, km, sikayet):
-        return f"""**[AUTOMOTIVE DIAGNOSTIC AI - ARIZA RAPORU]**
-- **Araç:** {marka} {model} ({yil}) | {motor} | {yakit} | {km:,} KM
-- **Şikayet:** {sikayet}
-- **Teşhis:** OBD2 canlı veri taraması ve fiziki kontrol şarttır. Ciddiyet: SEVİYE 2 – Orta."""
+    def ariza_teshis_et(sikayet_metni):
+        sorgu = sikayet_metni.lower().strip()
+        
+        if "p0300" in sorgu or "tekleme" in sorgu or "silkeleme" in sorgu or "p0301" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Genel / Çoklu Silindirli Benzinli veya Dizel Üniteler
+- **ARIZA:** Rastgele veya silindir bazlı motor teklemesi / sarsıntılı çalışma (Örn: P0300 / P0301)
+- **OLASI NEDENLER:**
+  1. Ateşleme bobinlerinde delinme veya zayıflama (Mekanik/Elektronik).
+  2. Bujilerin ömrünü tamamlaması veya tırnak aralığının açılması.
+  3. Yakıt enjektörlerinde tıkanıklık, püskürtme bozukluğu veya geri dönüş kaçağı.
+  4. Silindir kompresyon kaybı veya subap sızdırması.
+- **BELİRTİLER:** Egzozdan patırtılı ses, motor arıza lambasının yanıp sönmesi, çekişte düşüş, rölantide titreme.
+- **KONTROL EDİLECEK PARÇALAR:** Bujiler, bobinler, enjektörler, kompresyon basıncı.
+- **TEŞHİS:** OBD2 canlı veri okuma, bobin ve buji yer değiştirme testi, silindir kompresyon ölçümü.
+- **ÇÖZÜM:** Arızalı bobin/buji değişim seti, enjektör temizliği veya revizyonu.
+- **MALİYET:** Parça: 1.500₺ - 6.000₺ | İşçilik: 500₺ - 1.500₺ | Tahmini Toplam: 2.000₺ - 7.500₺ (Güncel piyasa ortalaması)
+- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK (Katalitik konventöre ve motora zarar verebilir)</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde kısa mesafede servise gitmeli, uzun yola çıkılmamalıdır.
+- **SONUÇ:** Önce ateşleme sistemi (buji/bobin) kontrol edilmeli, sorun çözülmezse yakıt sistemi incelenmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "p0299" in sorgu or "turbo" in sorgu or "basınç" in sorgu or "çekişten düş" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Turbo Beslemeli Benzinli / Dizel Motorlar
+- **ARIZA:** Turbo basıncı düşük (P0299) veya çekiş düşüklüğü.
+- **OLASI NEDENLER:**
+  1. Intercooler (hava soğutucu) hortumlarında yırtık, delik veya kelepçe kaçağı.
+  2. N75 turbo basınç regülatör valfi arızası veya hortum tıkanıklığı.
+  3. Turbo mili aşırı boşluğu, sıkışması veya değişken geometri (VTG) kurum bağlanması.
+  4. MAP / Basınç sensörü arızası.
+- **BELİRTİLER:** Yokuşlarda çekişten düşme, gaza basınca ıslık/fısıltı sesi, yüksek devirlere çıkmada zorlanma.
+- **KONTROL EDİLECEK PARÇALAR:** Turbo hortumları, intercooler peteği, N75 valfi, turbo mili.
+- **TEŞHİS:** Duman testi (kaçak için), OBD2 canlı veri (Desired vs Actual Boost Pressure) analizi.
+- **ÇÖZÜM:** Kaçak hortum değişimi, N75 valf değişimi veya turbo revizyonu.
+- **MALİYET:** Parça: 1.000₺ - 15.000₺ | İşçilik: 1.000₺ - 4.000₺ | Tahmini Toplam: 2.000₺ - 19.000₺
+- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>YÜKSEK</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
+- **SONUÇ:** İlk olarak hortumlar ve intercooler gözle ve basınçla kontrol edilmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "hararet" in sorgu or "su eksiltiyor" in sorgu or "conta" in sorgu or "radyatör" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Tüm İçten Yanmalı Motorlar
+- **ARIZA:** Motor hararet yapması veya soğutma suyu eksiltmesi.
+- **OLASI NEDENLER:**
+  1. Silindir kapak contasının yanması veya çatlaması.
+  2. Termostatın açık/kapalı kalması veya devridaim (su pompası) arızası.
+  3. Radyatör delinmesi veya fan müşürü/motoru arızası.
+  4. Soğutma hortumlarında kaçak veya genleşme kapağı arızası.
+- **BELİRTİLER:** Hararet ibresinin kırmızı bölgeye yaklaşması, antifriz kabında yağlanma veya köpürme, egzozdan beyaz duman, kaloriferin ısıtmaması.
+- **KONTROL EDİLECEK PARÇALAR:** Kapak contası, termostat, radyatör, devirdaim, fan.
+- **TEŞHİS:** Soğutma sistemi basınç testi, CO2 kaçak testi (antifrizde egzoz gazı testi).
+- **ÇÖZÜM:** Kapak contası değişimi ve rektefiye, termostat/devirdaim değişimi, radyatör onarımı.
+- **MALİYET:** Parça: 2.000₺ - 15.000₺ | İşçilik: 3.000₺ - 15.000₺ | Tahmini Toplam: 5.000₺ - 30.000₺
+- **CİDDİYET:** <span style='color: #ef4444; font-weight: bold;'>KRİTİK</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** <span style='color: #ef4444; font-weight: bold;'>ASLA KULLANILMAMALI (Motor bloğu eğilebilir veya yatak sarabilir!).</span>
+- **SONUÇ:** Araç derhal durdurulmalı, çekici ile servise sevk edilmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        elif "marş" in sorgu or "çalışmıyor" in sorgu or "akü" in sorgu or "marş basmıyor" in sorgu:
+            return """**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Tüm Araçlar
+- **ARIZA:** Motorun hiç çalışmaması veya marş basmaması.
+- **OLASI NEDENLER:**
+  1. Akü voltajının düşmesi veya akü kutup başı oksitlenmesi.
+  2. Marş motoru kömürlerinin aşınması veya marş otomatiği arızası.
+  3. Kontak arızası veya immobilizer (anahtar tanıma) sorunu.
+  4. Yakıt pompası arızası veya sigorta atması.
+- **BELİRTİLER:** Anahtarı çevirince 'tık' sesi gelmesi, göstergelerin sönmesi veya hiç ses çıkmaması.
+- **KONTROL EDİLECEK PARÇALAR:** Akü, marş motoru, sigorta kutusu, anahtar/immobilizer.
+- **TEŞHİS:** Multimetre ile akü voltaj ölçümü (12.4V altı zayıf akü), marş çekiş testi.
+- **ÇÖZÜM:** Akü şarjı / değişimi, marş motoru revizyonu, sigorta değişimi.
+- **MALİYET:** Parça: 500₺ - 6.000₺ | İşçilik: 300₺ - 1.500₺ | Tahmini Toplam: 800₺ - 7.500₺
+- **CİDDİYET:** Orta
+- **ARACI KULLANMAYA DEVAM ETMEK:** Araç çalışmadığı için kullanılamaz. Takviye veya çekici gerekir.
+- **SONUÇ:** İlk olarak akü ve kutup başları kontrol edilmelidir.
+- **GÜVEN DÜZEYİ:** Yüksek"""
+
+        else:
+            return f"""**[PROFESYONEL ARIZA RAPORU ŞABLONU]**
+- **ARAÇ:** Genel Arıza Teşhis Modülü
+- **ARIZA:** '{sikayet_metni}'
+- **OLASI NEDENLER:**
+  1. Sensör kirlenmesi veya soket oksitlenmesi (Elektronik).
+  2. Periyodik bakım gecikmesi veya filtre tıkanıklığı (Mekanik).
+  3. Yakıt kalitesi veya tesisat kopuklukları.
+- **BELİRTİLER:** Gösterge panelinde arıza lambası, düzensiz çalışma veya performans kaybı.
+- **KONTROL EDİLECEK PARÇALAR:** İlgili sensörler, sigortalar, kablo demetleri.
+- **TEŞHİS:** OBD2 bilgisayarlı arıza tespiti (DTC kod okuma) ve canlı veri incelemesi.
+- **ÇÖZÜM:** Uzman servis fiziki kontrolü, parça onarımı veya değişimi.
+- **MALİYET:** Teşhis sonrasına bağlı olarak değişir.
+- **CİDDİYET:** <span style='color: #fbbf24; font-weight: bold;'>ORTA / KONTROL EDİLMELİ</span>
+- **ARACI KULLANMAYA DEVAM ETMEK:** Kontrollü şekilde servise gitmeli.
+- **SONUÇ:** OBD2 cihazına bağlatılarak hata kodlarının kaynağı netleştirilmelidir.
+- **GÜVEN DÜZEYİ:** Orta"""
 
 # --- ULTIMATE AUTOMOTIVE AI ---
 class UltimateAutomotiveAI:
     @staticmethod
     def analiz_et(arama_sorgusu):
-        sorgu = arama_sorgusu.lower().strip()
-        if "ses" in sorgu or "tıkırtı" in sorgu:
-            return "**[ULTIMATE AI - SÜSPANSİYON & SES ANALİZİ]**\nÖn takım Z rotları ve tekerlek bilyaları kontrol edilmelidir."
-        elif "honda" in sorgu:
-            return "**[ULTIMATE AI - HONDA UZMANLIK]**\nVTEC motor, 40.000 KM'de bir subap ayarı gerektirir."
-        elif "fiat" in sorgu or "multijet" in sorgu:
-            return "**[ULTIMATE AI - FİAT MULTİJET]**\nEGR ve DPF kurum temizliğine dikkat edilmelidir."
-        elif "volkswagen" in sorgu or "dsg" in sorgu:
-            return "**[ULTIMATE AI - VAG / DSG]**\n7 ileri kuru kavrama DSG mekatronik ve kavrama titremesi kontrol edilmelidir."
-        else:
-            return f"**[ULTIMATE AI BİLGİ BANKASI: '{arama_sorgusu}']**\nTSE belgeli kurumsal ekspertiz kontrolü önerilir."
+        return f"**[ULTIMATE AI BİLGİ BANKASI: '{arama_sorgusu}']**\nTSE belgeli kurumsal ekspertiz kontrolü önerilir."
 
 class TeknikHesaplamalar:
     @staticmethod
@@ -216,7 +297,7 @@ try:
 except Exception: pass
 
 st.sidebar.markdown(f"<h2 style='text-align: center; color: {aktif_palet['btn_1']}; font-weight:700;'><span style='font-size: 28px;'>🚗</span> AUTO-LAB PRO AI</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px;'>Ultimate Automotive Intelligence System</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px;'>Complete Fault Diagnosis System</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 yeni_secim = st.sidebar.selectbox("🎨 Renk Kombinasyonu Seç:", list(PALETLER.keys()), index=list(PALETLER.keys()).index(st.session_state.secilen_tema))
@@ -231,7 +312,7 @@ st.sidebar.markdown(f'<a href="{wa_link}" target="_blank"><button style="backgro
 st.sidebar.markdown("---")
 
 if not st.session_state.giris_yapildi:
-    st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 ULTIMATE AUTOMOTIVE AI</h1><p>Profesyonel Otomotiv İstihbarat ve Analiz Sistemine Hoş Geldiniz.</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB Pro - Fault Diagnosis System</h1><p>Devam etmek için giriş yapın veya hesap oluşturun.</p></div>", unsafe_allow_html=True)
     col_bos1, col_form, col_bos2 = st.columns([1, 1.4, 1])
     with col_form:
         tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Hesap Oluştur"])
@@ -284,7 +365,7 @@ if not st.session_state.giris_yapildi:
 else:
     col_b1, col_b2 = st.columns([4, 1])
     with col_b1:
-        st.title("🚗 ULTIMATE AUTOMOTIVE AI - Intelligence System")
+        st.title("🚗 AUTO-LAB Pro - Complete Fault Diagnosis System")
         rol = "🛡️ Sistem Yöneticisi" if st.session_state.is_admin else "👤 Standart Üye"
         st.markdown(f"Aktif Oturum: **{st.session_state.aktif_kullanici}** &nbsp; <span class='user-badge'>{rol}</span>", unsafe_allow_html=True)
     with col_b2:
@@ -298,6 +379,7 @@ else:
     st.markdown("<br>", unsafe_allow_html=True)
 
     base_menu = [
+        "🔍 Komple Arıza Teşhis & Arama Motoru",
         "⚙️ Engine Expert AI – Motor ve Revizyon Analizi",
         "🏷️ Car Buying Expert AI – Profesyonel Satın Alma Eksperi",
         "🔧 Automotive Diagnostic AI – Profesyonel Arıza Tespit Merkezi",
@@ -315,11 +397,24 @@ else:
     menu_listesi = base_menu + (["🛡️ Admin Paneli"] if st.session_state.is_admin else [])
     sekme = st.sidebar.radio("📌 Navigasyon Menüsü", menu_listesi)
 
-    if sekme == "⚙️ Engine Expert AI – Motor ve Revizyon Analizi":
+    if sekme == "🔍 Komple Arıza Teşhis & Arama Motoru":
+        st.markdown("""
+            <div class="dashboard-card">
+                <h3>🔍 Komple Otomotiv Arıza Teşhis Veritabanı</h3>
+                <p style='font-size: 14px;'>Motor mekanik, dizel/benzinli, turbo, şanzıman, soğutma, elektrik, sensörler, OBD2 kodları, fren, süspansiyon ve klima arızalarını buraya yazarak profesyonel arıza raporu alabilirsin.</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        ariza_girdisi = st.text_area("Arıza belirtisini, sesini veya OBD2 kodunu yazın:", placeholder="Örn: P0300 arıza kodu, motor hararet yapıyor, marş basmıyor...")
+        if st.button("🔍 Profesyonel Teşhis Raporu Oluştur", use_container_width=True):
+            if ariza_girdisi.strip():
+                rapor = AutomotiveDiagnosticAI.ariza_teshis_et(ariza_girdisi)
+                st.markdown(f"<div class='dashboard-card'>{rapor.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
+
+    elif sekme == "⚙️ Engine Expert AI – Motor ve Revizyon Analizi":
         st.markdown("""
             <div class="dashboard-card">
                 <h3>⚙️ Engine Expert AI – Profesyonel Motor İstihbaratı</h3>
-                <p style='font-size: 14px;'>İncelemek istediğiniz motor kodunu veya modelini girin (Örn: B58, N47, 1.5 dCi, EA888, 1.3 Multijet).</p>
             </div>
         """, unsafe_allow_html=True)
         motor_sorgu = st.text_input("Motor Kodu veya Modeli:", placeholder="Örn: BMW B58, N47, 1.5 dCi")
@@ -350,25 +445,15 @@ else:
             st.markdown(f"<div class='dashboard-card'>{CarBuyingExpertAI.analiz_et(cb_marka, cb_model, cb_yil, cb_motor, cb_guc, cb_yakit, cb_sanziman, cb_km, cb_fiyat, cb_tramer, '', '', '').replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
     elif sekme == "🔧 Automotive Diagnostic AI – Profesyonel Arıza Tespit Merkezi":
-        st.markdown("""
-            <div class="dashboard-card">
-                <h3>🔧 Automotive Diagnostic AI – Arıza Teşhis & OBD2 Analizi</h3>
-            </div>
-        """, unsafe_allow_html=True)
-        d_marka = st.text_input("Marka:", "Ford")
-        d_model = st.text_input("Model:", "Focus")
-        d_yil = st.number_input("Yıl:", 1990, 2026, 2018)
-        d_motor = st.text_input("Motor:", "1.5 TDCi")
-        d_yakit = st.selectbox("Yakıt:", ["Dizel", "Benzin"])
-        d_km = st.number_input("KM:", 0, 800000, 85000)
-        d_sikayet = st.text_area("Şikayet / OBD2 Kodu:", "P0300 arıza kodu")
-        if st.button("Profesyonel Teşhisi Başlat", use_container_width=True):
-            st.markdown(f"<div class='dashboard-card'>{AutomotiveDiagnosticAI.ariza_teshis_et(d_marka, d_model, d_yil, d_motor, d_yakit, d_km, d_sikayet).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
+        st.markdown("""<div class="dashboard-card"><h3>🔧 Automotive Diagnostic AI</h3></div>""", unsafe_allow_html=True)
+        d_sikayet = st.text_area("Şikayet:", "P0300 arıza kodu")
+        if st.button("Teşhisi Başlat", use_container_width=True):
+            st.markdown(f"<div class='dashboard-card'>{AutomotiveDiagnosticAI.ariza_teshis_et(d_sikayet).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
     elif sekme == "🤖 Ultimate AI & Kronik Bilgi Bankası":
-        st.markdown("<div class='dashboard-card'><h3>🤖 Ultimate Automotive AI - Bilgi Bankası</h3></div>", unsafe_allow_html=True)
+        st.markdown("<div class='dashboard-card'><h3>🤖 Ultimate Automotive AI</h3></div>", unsafe_allow_html=True)
         sorgu = st.text_input("Sorgu:")
-        if st.button("Bilgi Bankasında Ara", use_container_width=True):
+        if st.button("Analiz Et", use_container_width=True):
             if sorgu.strip():
                 st.markdown(f"<div class='dashboard-card'>{UltimateAutomotiveAI.analiz_et(sorgu).replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
 
