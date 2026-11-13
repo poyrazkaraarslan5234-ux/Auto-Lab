@@ -34,7 +34,7 @@ def discorda_mesaj_gonder(mesaj):
     except Exception:
         pass
 
-# --- OTOMATİK VERİTABANI YEDEKLEME ---
+# --- OTOMATİK VERİTABANI YEDEKLEME VE TABLOLAR ---
 def yedekle_db():
     yedek_klasoru = "yedekler"
     if not os.path.exists(yedek_klasoru):
@@ -49,7 +49,16 @@ if "yedek_alindi" not in st.session_state:
     yedekle_db()
     st.session_state["yedek_alindi"] = True
 
-# --- OTOMOTİV UZMAN YAPAY ZEKA MODÜLLERİ ---
+try:
+    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS kullanicilar (id INTEGER PRIMARY KEY AUTOINCREMENT, ad TEXT, soyad TEXT, eposta TEXT, eposta_sifre TEXT, kullanici_adi TEXT UNIQUE, sifre TEXT, is_banned INTEGER DEFAULT 0, islem_hakki INTEGER DEFAULT 20, kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS giris_loglari (id INTEGER PRIMARY KEY AUTOINCREMENT, kullanici_adi TEXT, islem_tipi TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS arac_masraflari (id INTEGER PRIMARY KEY AUTOINCREMENT, kullanici TEXT, arac_model TEXT, masraf_turu TEXT, tutar REAL, aciklama TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        conn.commit()
+except Exception: pass
+
+# --- OTOMOTİV UZMAN YAPAY ZEKA VE HESAPLAMA MODÜLLERİ ---
 class EngineExpertAI:
     @staticmethod
     def motor_analiz_et(motor_kodu_veya_adi):
@@ -190,7 +199,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- VERİTABANI BAĞLANTISI VE TABLOLAR ---
 def sifre_hashle(sifre): return hashlib.sha256(sifre.encode("utf-8")).hexdigest()
 def giris_kaydi_ekle(kullanici_adi, islem_tipi):
     try:
@@ -204,16 +212,7 @@ if "aktif_kullanici" not in st.session_state: st.session_state.aktif_kullanici =
 if "giris_yapildi" not in st.session_state: st.session_state.giris_yapildi = False
 if "is_admin" not in st.session_state: st.session_state.is_admin = False
 
-try:
-    with sqlite3.connect("autolab_pro.db", timeout=10) as conn:
-        cursor = conn.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS kullanicilar (id INTEGER PRIMARY KEY AUTOINCREMENT, ad TEXT, soyad TEXT, eposta TEXT, eposta_sifre TEXT, kullanici_adi TEXT UNIQUE, sifre TEXT, is_banned INTEGER DEFAULT 0, islem_hakki INTEGER DEFAULT 20, kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS giris_loglari (id INTEGER PRIMARY KEY AUTOINCREMENT, kullanici_adi TEXT, islem_tipi TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS arac_masraflari (id INTEGER PRIMARY KEY AUTOINCREMENT, kullanici TEXT, arac_model TEXT, masraf_turu TEXT, tutar REAL, aciklama TEXT, tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        conn.commit()
-except Exception: pass
-
-# --- KENAR ÇUCUĞU (SİDEBAR) ---
+# --- KENAR ÇUBUĞU ---
 st.sidebar.markdown("<h2 style='text-align: center; color: #00f3ff; font-weight:700;'>🚗 AUTO-LAB PRO</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align: center; font-size: 13px; margin-top: -10px; color: #9ca3af;'>Ultimate Automotive Ecosystem</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
@@ -223,7 +222,7 @@ wa_link = f"https://wa.me/{WHATSAPP_NUMARASI}?text={requests.utils.quote(wa_mesa
 st.sidebar.markdown(f'<a href="{wa_link}" target="_blank"><button style="background: linear-gradient(135deg, #059669, #10b981); color:white; border:none; padding:10px 15px; border-radius:12px; font-weight:600; cursor:pointer; width:100%;">💬 WhatsApp Destek Hattı</button></a>', unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-# --- GİRİŞ / KAYIT EKRANI ---
+# --- GİRİŞ / KAYIT KONTROLÜ ---
 if not st.session_state.giris_yapildi:
     st.markdown("<div style='text-align: center; padding: 20px 0;'><h1>🚗 AUTO-LAB Pro & Perplexity AI</h1><p style='color: #9ca3af;'>Devam etmek için giriş yapın veya hesap oluşturun.</p></div>", unsafe_allow_html=True)
     col_bos1, col_form, col_bos2 = st.columns([1, 1.4, 1])
@@ -286,7 +285,7 @@ if not st.session_state.giris_yapildi:
                         st.success("Kayıt başarılı! Giriş yapabilirsiniz.")
                     except Exception as e: st.error(f"Hata: {e}")
 else:
-    # --- ANA UYGULAMA EKRANI ---
+    # --- ANA UYGULAMA ---
     col_b1, col_b2 = st.columns([4, 1])
     with col_b1:
         st.title("🚗 AUTO-LAB Pro - Ultimate Ecosystem")
@@ -308,8 +307,11 @@ else:
         "🏷️ Car Buying Expert AI – Profesyonel Satın Alma Eksperi",
         "🤖 Ultimate AI & Kronik Bilgi Bankası",
         "🧮 Mühendislik Hesaplama Merkezi",
-        "⚖️ Araç Karşılaştırma",
+        "⚖️ Araç Karşılaştırma & 0-100 Simülasyon",
         "💰 Maliyet & Bakım Takip",
+        "⛽ Akaryakıt & Yol Maliyet Simülatörü",
+        "🛠️ Akıllı Ağır Bakım & Parça Ömrü Takipçisi",
+        "🛞 Milimetrik Jant & Lastik Sapma Hesaplayıcı",
         "🌐 Perplexity AI Tarayıcı & Görünüm",
         "⚙️ Şifremi Güncelle",
     ]
@@ -318,12 +320,7 @@ else:
 
     # 1. İLERİ SEVİYE ARIZA TEŞHİS
     if sekme == "🔍 İleri Seviye Arıza Teşhis & Arama Motoru":
-        st.markdown("""
-            <div class="dashboard-card">
-                <h3>🔍 İleri Seviye Otomotiv Arıza Teşhis Veritabanı</h3>
-                <p style='font-size: 14px; color: #9ca3af;'>Mekanik, yakıt, turbo, şanzıman, elektrik ve sürüş şikayetlerini yazarak profesyonel uzman raporu alabilirsin.</p>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""<div class="dashboard-card"><h3>🔍 İleri Seviye Otomotiv Arıza Teşhis Veritabanı</h3></div>""", unsafe_allow_html=True)
         ariza_girdisi = st.text_area("Arıza belirtisini veya şikayetinizi yazın:", placeholder="Örn: Araç sabahları geç çalışıyor veya yokuşta güç kaybı yaşıyor...")
         if st.button("🔍 Gelişmiş Teşhis Raporu Oluştur", use_container_width=True):
             if ariza_girdisi.strip():
@@ -381,30 +378,35 @@ else:
             toplam_tutar = toplam_litre * yakit_fiyat
             st.info(f"Toplam Tüketim: **{toplam_litre:.2f} Litre** | Tahmini Seyahat Maliyeti: **{toplam_tutar:,.2f} TL**")
 
-    # 6. ARAÇ KARŞILAŞTIRMA
-    elif sekme == "⚖️ Araç Karşılaştırma":
-        st.markdown("""<div class="dashboard-card"><h3>⚖️ Profesyonel Araç Karşılaştırma Modülü</h3></div>""", unsafe_allow_html=True)
+    # 6. ARAÇ KARŞILAŞTIRMA & 0-100 SİMÜLASYON
+    elif sekme == "⚖️ Araç Karşılaştırma & 0-100 Simülasyon":
+        st.markdown("""<div class="dashboard-card"><h3>⚖️ Profesyonel Araç Karşılaştırma & 0-100 Simülasyonu</h3></div>""", unsafe_allow_html=True)
         col_arac1, col_arac2 = st.columns(2)
         with col_arac1:
             st.subheader("1. Araç")
-            a1_ad = st.text_input("Araç 1 Adı:", "Honda Civic 1.6 iES")
+            a1_ad = st.text_input("Model 1 Adı:", "Honda Civic 1.6 iES")
             a1_hp = st.number_input("Güç (HP):", 50, 1000, 120, key="h1")
-            a1_tork = st.number_input("Tork (Nm):", 50, 1500, 144, key="t1")
-            a1_hiz = st.number_input("0-100 KM/s (sn):", 2.0, 20.0, 10.2, key="s1")
+            a1_agirlik = st.number_input("Araç Ağırlığı (kg):", 700, 3000, 1150, key="ag1")
         with col_arac2:
             st.subheader("2. Araç")
-            a2_ad = st.text_input("Araç 2 Adı:", "Renault Megane 1.5 dCi")
+            a2_ad = st.text_input("Model 2 Adı:", "Renault Megane 1.5 dCi")
             a2_hp = st.number_input("Güç (HP):", 50, 1000, 110, key="h2")
-            a2_tork = st.number_input("Tork (Nm):", 50, 1500, 240, key="t2")
-            a2_hiz = st.number_input("0-100 KM/s (sn):", 2.0, 20.0, 11.0, key="s2")
-        if st.button("Araçları Kıyasla", use_container_width=True):
+            a2_agirlik = st.number_input("Araç Ağırlığı (kg):", 700, 3000, 1300, key="ag2")
+        if st.button("Performansları Kıyasla", use_container_width=True):
+            # Basit fiziksel oran hesaplamaları (Güç/Ağırlık oranı bazlı tahmini 0-100)
+            oran1 = a1_hp / a1_agirlik
+            oran2 = a2_hp / a2_agirlik
+            tahmini_hiz1 = max(4.5, 14.5 - (oran1 * 12))
+            tahmini_hiz2 = max(4.5, 14.5 - (oran2 * 12))
+            
             df_karsilastirma = pd.DataFrame({
-                "Özellik": ["Model Adı", "Motor Gücü", "Tork", "0-100 Hızlanma"],
-                a1_ad: [a1_ad, f"{a1_hp} HP", f"{a1_tork} Nm", f"{a1_hiz} sn"],
-                a2_ad: [a2_ad, f"{a2_hp} HP", f"{a2_tork} Nm", f"{a2_hiz} sn"]
+                "Kriter": ["Model Adı", "Güç / Ağırlık Oranı", "Tahmini 0-100 Hızlanma"],
+                a1_ad: [a1_ad, f"{oran1:.3f} HP/kg", f"{tahmini_hiz1:.2f} saniye"],
+                a2_ad: [a2_ad, f"{oran2:.3f} HP/kg", f"{tahmini_hiz2:.2f} saniye"]
             })
             st.table(df_karsilastirma)
-            st.success(f"**Sonuç:** {a1_ad} yüksek devir ve benzin karakteristiği sunarken, {a2_ad} tork avantajı ve yakıt ekonomisiyle öne çıkmaktadır.")
+            kazanan = a1_ad if tahmini_hiz1 < tahmini_hiz2 else a2_ad
+            st.success(f"🏁 **Simülasyon Sonucu:** Güç-ağırlık oranına göre **{kazanan}** kalkışlarda ve ivmelenmede daha avantajlı görünmektedir.")
 
     # 7. MALİYET & BAKIM TAKİP
     elif sekme == "💰 Maliyet & Bakım Takip":
@@ -439,7 +441,73 @@ else:
                     st.warning("Henüz kayıtlı bir masrafınız bulunmuyor.")
         except Exception: pass
 
-    # 8. PERPLEXITY AI TARAYICI & GÖRÜNÜM
+    # 8. AKARYAKIT & YOL MALİYET SİMÜLATÖRÜ (YENİ EKLENEN AKTİF MODÜL)
+    elif sekme == "⛽ Akaryakıt & Yol Maliyet Simülatörü":
+        st.markdown("""<div class="dashboard-card"><h3>⛽ Akaryakıt & Güzergah Maliyet Simülatörü</h3></div>""", unsafe_allow_html=True)
+        col_y1, col_y2 = st.columns(2)
+        with col_y1:
+            yakit_tipi = st.selectbox("Yakıt Türü:", ["Benzin (95 Oktan)", "Motorin (Dizel)", "LPG"])
+            birim_fiyat = st.number_input("Güncel Litre Fiyatı (TL):", 1.0, 100.0, 43.5 if "Benzin" in yakit_tipi else (42.0 if "Motorin" in yakit_tipi else 25.0))
+        with col_y2:
+            mesafe_km = st.number_input("Seyahat Mesafesi (KM):", 1, 5000, 450)
+            ort_tuk = st.number_input("100 KM'deki Ortalama Tüketim (Lt):", 2.0, 25.0, 6.8)
+        
+        if st.button("Yol Maliyetini Hesapla", use_container_width=True):
+            harcanan_lt = (mesafe_km / 100) * ort_tuk
+            toplam_maliyet = harcanan_lt * birim_fiyat
+            st.success(f"🎯 **Simülasyon Sonucu:** {mesafe_km} KM yol için harcanacak toplam yakıt **{harcanan_lt:.1f} Litre**, toplam seyahat maliyeti ise **{toplam_maliyet:,.2f} TL** olacaktır.")
+
+    # 9. AKILLI AĞIR BAKIM & PARÇA ÖMRÜ TAKİPÇİSİ (YENİ EKLENEN AKTİF MODÜL)
+    elif sekme == "🛠️ Akıllı Ağır Bakım & Parça Ömrü Takipçisi":
+        st.markdown("""<div class="dashboard-card"><h3>🛠️ Akıllı Ağır Bakım & Parça Ömrü Takipçisi</h3></div>""", unsafe_allow_html=True)
+        arac_km_durumu = st.number_input("Aracınızın Güncel Kilometresi:", 0, 600000, 125000)
+        son_triger_km = st.number_input("Triger Setinin Değiştiği Son KM:", 0, 600000, 40000)
+        son_balata_km = st.number_input("Fren Balatalarının Değiştiği Son KM:", 0, 600000, 90000)
+        
+        if st.button("Bakım Durumlarını Sorgula", use_container_width=True):
+            triger_fark = arac_km_durumu - son_triger_km
+            balata_fark = arac_km_durumu - son_balata_km
+            
+            st.markdown("---")
+            # Triger Kontrolü (Genel ortalama 80.000 - 100.000 KM)
+            if triger_fark >= 80000:
+                st.error(f"⚠ **TRİGER SETİ DEĞİŞİM ZAMANI GELDİ!** (Son değişimden bu yana {triger_fark:,} KM yapılmış. Kopma riski taşır!)")
+            else:
+                st.success(f"✅ **Triger Seti Durumu İyi:** Kalan tahmini ömür yaklaşık {80000 - triger_fark:,} KM.")
+                
+            # Balata Kontrolü (Genel ortalama 35.000 - 45.000 KM)
+            if balata_fark >= 35000:
+                st.warning(f"🔧 **Fren Balataları Kontrol Edilmeli!** (Son değişimden bu yana {balata_fark:,} KM yapılmış.)")
+            else:
+                st.info(f"✔ **Fren Balataları Normal:** Yaklaşık {35000 - balata_fark:,} KM daha idare eder.")
+
+    # 10. MİLİMETRİK JANT & LASTİK SAPMA HESAPLAYICI (YENİ EKLENEN AKTİF MODÜL)
+    elif sekme == "🛞 Milimetrik Jant & Lastik Sapma Hesaplayıcı":
+        st.markdown("""<div class="dashboard-card"><h3>🛞 Milimetrik Jant ve Lastik Çap Sapma Hesaplayıcı</h3></div>""", unsafe_allow_html=True)
+        col_j1, col_j2 = st.columns(2)
+        with col_j1:
+            st.subheader("Orijinal Ebat")
+            o_taban = st.number_input("Taban (mm):", 135, 335, 205)
+            o_yanak = st.number_input("Yanak Oranı (%):", 25, 85, 55)
+            o_jant = st.number_input("Jant Çapı (inç):", 12, 24, 16)
+        with col_j2:
+            st.subheader("Yeni Ebat")
+            y_taban = st.number_input("Yeni Taban (mm):", 135, 335, 225)
+            y_yanak = st.number_input("Yeni Yanak Oranı (%):", 25, 85, 45)
+            y_jant = st.number_input("Yeni Jant Çapı (inç):", 12, 24, 17)
+            
+        if st.button("Sapmayı ve Çapı Hesapla", use_container_width=True):
+            cap_orijinal = (o_taban * (o_yanak / 100) * 2) + (o_jant * 25.4)
+            cap_yeni = (y_taban * (y_yanak / 100) * 2) + (y_jant * 25.4)
+            sapma_yuzde = ((cap_yeni - cap_orijinal) / cap_orijinal) * 100
+            
+            st.info(f"Orijinal Çap: **{cap_orijinal:.1f} mm** | Yeni Ebat Çapı: **{cap_yeni:.1f} mm**")
+            if abs(sapma_yuzde) <= 3.0:
+                st.success(f"✅ Çap farkı **% {sapma_yuzde:.2f}**. %3'lük yasal ve güvenli tolerans sınırları içindedir.")
+            else:
+                st.error(f"⚠ Çap farkı **% {sapma_yuzde:.2f}**. Tolerans sınırını aştığı için kilometre saatinizi, yakıt tüketim ölçümünüzü ve frenajı olumsuz etkiler!")
+
+    # 11. PERPLEXITY AI TARAYICI & GÖRÜNÜM
     elif sekme == "🌐 Perplexity AI Tarayıcı & Görünüm":
         st.markdown("""<div class="dashboard-card"><h3>🌐 Perplexity AI - Entegre Arayüz</h3></div>""", unsafe_allow_html=True)
         perplexity_html_kodu = """
@@ -469,14 +537,14 @@ else:
         <body>
             <div class="perplexity-box">
                 <h2>Perplexity Arayüz Entegrasyonu Aktif</h2>
-                <p>Gönderdiğiniz SingleFile/HTML arayüz şablonu ve karanlık tema yapısı, Python altyapısı ile tam uyumlu hale getirilmiştir.</p>
+                <p>Tüm araba modülleri, hesaplayıcılar ve arka plan servisleri güncellenerek sisteme kusursuz bir şekilde entegre edilmiştir.</p>
             </div>
         </body>
         </html>
         """
         components.html(perplexity_html_kodu, height=400, scrolling=True)
 
-    # 9. ŞİFREMİ GÜNCELLE
+    # 12. ŞİFREMİ GÜNCELLE
     elif sekme == "⚙️ Şifremi Güncelle":
         st.markdown("""<div class="dashboard-card"><h3>⚙️ Kullanıcı Şifre Güncelleme</h3></div>""", unsafe_allow_html=True)
         m_sifre = st.text_input("Mevcut Şifre:", type="password")
@@ -487,7 +555,7 @@ else:
             else:
                 st.error("Lütfen alanları eksiksiz doldurun.")
 
-    # 10. ADMIN PANELİ
+    # 13. ADMIN PANELİ
     elif sekme == "🛡️ Admin Paneli" and st.session_state.is_admin:
         st.markdown("""<div class="dashboard-card"><h3>🛡️ Sistem Yönetici Paneli</h3></div>""", unsafe_allow_html=True)
         try:
